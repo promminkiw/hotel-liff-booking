@@ -1,1 +1,6 @@
-// CORS config restricted to ALLOWED_ORIGIN
+import { env } from './env.js'
+
+export const corsOptions = {
+  origin: env.allowedOrigin,
+  credentials: true,
+}
