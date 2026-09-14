@@ -1,0 +1,49 @@
+# CI: run backend tests and check the frontend builds cleanly on every
+# push/PR to main. This is a test gate, not the deploy step - Render
+# (Phase 22) auto-deploys on push to main once connected to this repo, and
+# Vercel does the same for the frontend, so there's no separate deploy job
+# here to keep credentials for those out of GitHub Actions entirely.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hotel-liff-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hotel-liff-backend/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hotel-liff-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hotel-liff-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+        env:
+          # Dummy values so env.js's fail-fast check passes during build -
+          # the actual bundle only reads these client-side after deploy,
+          # this step just proves the app compiles.
+          VITE_API_BASE_URL: https://example.com
+          VITE_LIFF_ID: 0000000000-aaaaaaaaaaaaaaaaaaaaaaaa
