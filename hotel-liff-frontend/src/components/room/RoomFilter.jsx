@@ -1,4 +1,4 @@
-const ROOM_TYPES = ['Standard', 'Deluxe', 'Suite']
+import { ROOM_TYPES } from '../../utils/roomTypes.js'
 
 export default function RoomFilter({ roomType, guests, onChange }) {
   return (

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -15,5 +16,8 @@
     "express": "^4.21.0",
     "helmet": "^7.1.0",
     "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.0"
   }
 }

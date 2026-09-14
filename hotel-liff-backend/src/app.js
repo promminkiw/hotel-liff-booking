@@ -5,6 +5,7 @@ import morgan from 'morgan'
 import { corsOptions } from './config/cors.js'
 import healthRoutes from './routes/health.routes.js'
 import roomsRoutes from './routes/rooms.routes.js'
+import bookingsRoutes from './routes/bookings.routes.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
 export function createApp() {
@@ -17,6 +18,7 @@ export function createApp() {
 
   app.use('/health', healthRoutes)
   app.use('/api/rooms', roomsRoutes)
+  app.use('/api/bookings', bookingsRoutes)
 
   app.use((req, res) => {
     res.status(404).json({ error: 'Not found' })
