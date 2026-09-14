@@ -5,6 +5,21 @@ import { GEMINI_MODEL, generateContentWithRetry } from './geminiClient.js'
 import { buildSystemPrompt } from './systemPrompt.js'
 import { toolSchemas } from './toolSchemas.js'
 import { executeTool } from './toolExecutor.js'
+import { logger } from '../../utils/logger.js'
+
+// The Gemini SDK's ApiError carries an HTTP-style `.status` (e.g. 429) and
+// a `.message` that is the *raw* JSON error body from Google's API - never
+// safe to show a user directly. errorHandler.js treats any error with a
+// `.status` as "already has a safe, deliberate message" (that's how
+// BookingValidationError etc. are meant to surface), so an unwrapped
+// Gemini error would leak that raw JSON straight to the client. Wrapping
+// it here in a clean Thai message is what keeps that convention true.
+class AiServiceError extends Error {
+  constructor(message) {
+    super(message)
+    this.status = 503
+  }
+}
 
 // How many past messages get sent back to Gemini as context on every turn -
 // caps request size regardless of how long the conversation has grown in
@@ -97,14 +112,25 @@ export async function sendChatMessage({ lineUserId, displayName, message }) {
   let finalText = ''
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const response = await generateContentWithRetry({
-      model: GEMINI_MODEL,
-      contents,
-      config: {
-        systemInstruction: systemPrompt,
-        tools: [{ functionDeclarations: toolSchemas }],
-      },
-    })
+    let response
+    try {
+      response = await generateContentWithRetry({
+        model: GEMINI_MODEL,
+        contents,
+        config: {
+          systemInstruction: systemPrompt,
+          tools: [{ functionDeclarations: toolSchemas }],
+        },
+      })
+    } catch (err) {
+      logger.error('Gemini API error', err)
+      if (err.status === 429) {
+        throw new AiServiceError(
+          'ขออภัยครับ ตอนนี้ระบบ AI มีผู้ใช้งานจำนวนมาก กรุณาลองใหม่อีกครั้งในภายหลัง หรือติดต่อโรงแรมโดยตรง',
+        )
+      }
+      throw new AiServiceError('ขออภัยครับ ระบบ AI ขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง')
+    }
 
     const parts = response.candidates?.[0]?.content?.parts ?? []
     const functionCalls = parts.filter((p) => p.functionCall).map((p) => p.functionCall)
