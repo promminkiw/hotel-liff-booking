@@ -8,11 +8,12 @@ import { generateIdempotencyKey } from '../../utils/idempotency.js'
 import { formatCurrency } from '../../utils/formatCurrency.js'
 import { ROOM_TYPES } from '../../utils/roomTypes.js'
 import AvailabilityCalendar from '../../components/booking/AvailabilityCalendar.jsx'
+import LoginPrompt from '../../components/common/LoginPrompt.jsx'
 
 export default function Booking() {
   const [searchParams] = useSearchParams()
   const roomId = searchParams.get('roomId')
-  const user = useUser()
+  const { profile, idToken, loading: userLoading, login } = useUser()
   const navigate = useNavigate()
 
   const [lockedRoom, setLockedRoom] = useState(null)
@@ -90,8 +91,7 @@ export default function Booking() {
     setSubmitting(true)
     try {
       const { booking } = await createBooking({
-        lineUserId: user.lineUserId,
-        displayName: user.displayName,
+        idToken,
         roomType,
         checkIn,
         checkOut,
@@ -100,10 +100,18 @@ export default function Booking() {
       })
       setConfirmedBooking(booking)
     } catch (err) {
-      setSubmitError(err.message)
+      setSubmitError(err)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (userLoading) {
+    return <p>กำลังโหลด...</p>
+  }
+
+  if (!profile) {
+    return <LoginPrompt onLogin={login} message="เข้าสู่ระบบด้วย LINE เพื่อจองห้องพัก" />
   }
 
   if (confirmedBooking) {
@@ -225,7 +233,10 @@ export default function Booking() {
         </div>
       )}
 
-      {submitError && <p className="error-text">{submitError}</p>}
+      {submitError && submitError.status === 401 && (
+        <LoginPrompt onLogin={login} message="เซสชัน LINE หมดอายุ กรุณาเข้าสู่ระบบใหม่" />
+      )}
+      {submitError && submitError.status !== 401 && <p className="error-text">{submitError.message}</p>}
     </section>
   )
 }

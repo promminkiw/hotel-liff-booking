@@ -8,14 +8,16 @@ async function request(path, options = {}) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error ?? `Request failed with status ${res.status}`)
+    const error = new Error(body.error ?? `Request failed with status ${res.status}`)
+    error.status = res.status
+    throw error
   }
 
   return res.json()
 }
 
 export const httpClient = {
-  get: (path) => request(path),
-  post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
-  patch: (path, body) => request(path, { method: 'PATCH', body: JSON.stringify(body) }),
+  get: (path, options) => request(path, options),
+  post: (path, body, options) => request(path, { method: 'POST', body: JSON.stringify(body), ...options }),
+  patch: (path, body, options) => request(path, { method: 'PATCH', body: JSON.stringify(body), ...options }),
 }

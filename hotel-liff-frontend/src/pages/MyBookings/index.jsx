@@ -4,6 +4,7 @@ import { fetchMyBookings, cancelBooking } from '../../api/bookingsApi.js'
 import { useUser } from '../../context/UserContext.jsx'
 import { formatCurrency } from '../../utils/formatCurrency.js'
 import { formatDate } from '../../utils/formatDate.js'
+import LoginPrompt from '../../components/common/LoginPrompt.jsx'
 
 const STATUS_LABELS = {
   pending: 'รอดำเนินการ',
@@ -15,7 +16,7 @@ const STATUS_LABELS = {
 const CANCELLABLE_STATUSES = new Set(['pending', 'confirmed'])
 
 export default function MyBookings() {
-  const user = useUser()
+  const { profile, idToken, loading: userLoading, login } = useUser()
   const [bookings, setBookings] = useState(null)
   const [error, setError] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
@@ -24,34 +25,43 @@ export default function MyBookings() {
 
   function loadBookings() {
     setError(null)
-    return fetchMyBookings(user.lineUserId)
+    return fetchMyBookings(idToken)
       .then((data) => setBookings(data.bookings))
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err))
   }
 
   useEffect(() => {
-    loadBookings()
-  }, [user.lineUserId])
+    if (profile) loadBookings()
+  }, [profile, idToken])
 
   async function handleCancel(bookingId) {
     setCancellingId(bookingId)
     setCancelErrors((prev) => ({ ...prev, [bookingId]: null }))
     try {
-      await cancelBooking(bookingId, user.lineUserId)
+      await cancelBooking(bookingId, idToken)
       setConfirmingId(null)
       await loadBookings()
     } catch (err) {
-      setCancelErrors((prev) => ({ ...prev, [bookingId]: err.message }))
+      setCancelErrors((prev) => ({ ...prev, [bookingId]: err }))
     } finally {
       setCancellingId(null)
     }
+  }
+
+  if (userLoading) {
+    return <p>กำลังโหลด...</p>
+  }
+
+  if (!profile) {
+    return <LoginPrompt onLogin={login} message="เข้าสู่ระบบด้วย LINE เพื่อดูการจองของคุณ" />
   }
 
   return (
     <section>
       <h1>การจองของฉัน</h1>
 
-      {error && <p className="error-text">เกิดข้อผิดพลาด: {error}</p>}
+      {error && error.status === 401 && <LoginPrompt onLogin={login} message="เซสชัน LINE หมดอายุ กรุณาเข้าสู่ระบบใหม่" />}
+      {error && error.status !== 401 && <p className="error-text">เกิดข้อผิดพลาด: {error.message}</p>}
       {!error && !bookings && <p>กำลังโหลด...</p>}
       {bookings && bookings.length === 0 && (
         <p>
@@ -64,6 +74,7 @@ export default function MyBookings() {
           {bookings.map((booking) => {
             const status = booking.displayStatus ?? booking.status
             const canCancel = CANCELLABLE_STATUSES.has(status)
+            const cancelError = cancelErrors[booking.id]
 
             return (
               <li key={booking.id} className="booking-list-item">
@@ -74,7 +85,10 @@ export default function MyBookings() {
                   </p>
                   <p>รหัสการจอง: {booking.booking_code}</p>
 
-                  {cancelErrors[booking.id] && <p className="error-text">{cancelErrors[booking.id]}</p>}
+                  {cancelError && cancelError.status === 401 && (
+                    <LoginPrompt onLogin={login} message="เซสชัน LINE หมดอายุ กรุณาเข้าสู่ระบบใหม่" />
+                  )}
+                  {cancelError && cancelError.status !== 401 && <p className="error-text">{cancelError.message}</p>}
 
                   {canCancel && confirmingId !== booking.id && (
                     <button className="btn-link-danger" onClick={() => setConfirmingId(booking.id)}>

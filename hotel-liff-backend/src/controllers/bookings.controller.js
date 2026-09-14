@@ -4,9 +4,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export async function postBooking(req, res, next) {
   try {
-    const { lineUserId, displayName, roomType, checkIn, checkOut, guests, idempotencyKey } = req.body
+    const { roomType, checkIn, checkOut, guests, idempotencyKey } = req.body
+    const { lineUserId, displayName } = req.lineUser
 
-    if (!lineUserId || !roomType || !checkIn || !checkOut || !guests) {
+    if (!roomType || !checkIn || !checkOut || !guests) {
       return res.status(400).json({ error: 'ข้อมูลไม่ครบถ้วน' })
     }
 
@@ -31,11 +32,7 @@ export async function postBooking(req, res, next) {
 
 export async function getBookings(req, res, next) {
   try {
-    const { lineUserId } = req.query
-    if (!lineUserId) {
-      return res.status(400).json({ error: 'ต้องระบุ lineUserId' })
-    }
-    const bookings = await listBookingsByUser(lineUserId)
+    const bookings = await listBookingsByUser(req.lineUser.lineUserId)
     res.json({ bookings })
   } catch (err) {
     next(err)
@@ -44,15 +41,11 @@ export async function getBookings(req, res, next) {
 
 export async function patchCancelBooking(req, res, next) {
   try {
-    const { lineUserId } = req.body
-    if (!lineUserId) {
-      return res.status(400).json({ error: 'ต้องระบุ lineUserId' })
-    }
     if (!UUID_RE.test(req.params.id)) {
       return res.status(404).json({ error: 'ไม่พบการจองนี้' })
     }
 
-    const booking = await cancelBooking({ bookingId: req.params.id, lineUserId })
+    const booking = await cancelBooking({ bookingId: req.params.id, lineUserId: req.lineUser.lineUserId })
     res.json({ booking })
   } catch (err) {
     if (err.status) {

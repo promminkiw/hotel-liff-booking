@@ -19,6 +19,33 @@ a {
   flex-direction: column;
 }
 
+.liff-loading {
+  padding: var(--space-4);
+  color: var(--color-text-muted);
+}
+
+.liff-banner {
+  padding: var(--space-2) var(--space-4);
+  background: #fef9c3;
+  color: #854d0e;
+  font-size: 13px;
+  text-align: center;
+}
+
+.liff-banner-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.login-prompt {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+}
+
 .navbar {
   display: flex;
   align-items: center;
