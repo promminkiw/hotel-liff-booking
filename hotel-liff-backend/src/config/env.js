@@ -7,6 +7,7 @@ const required = [
   'LINE_CHANNEL_ID',
   'LINE_CHANNEL_SECRET',
   'LINE_MESSAGING_ACCESS_TOKEN',
+  'GEMINI_API_KEY',
 ]
 
 const missing = required.filter((key) => !process.env[key])
@@ -24,8 +25,5 @@ export const env = {
   lineChannelId: process.env.LINE_CHANNEL_ID,
   lineChannelSecret: process.env.LINE_CHANNEL_SECRET,
   lineMessagingAccessToken: process.env.LINE_MESSAGING_ACCESS_TOKEN,
-  // Not yet in `required` - the AI chat feature is wired up in Phase 12 but
-  // the key hasn't been provided yet, and the rest of the app must keep
-  // working without it until then. Add to `required` once it's set.
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  geminiApiKey: process.env.GEMINI_API_KEY,
 }

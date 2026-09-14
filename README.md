@@ -1,14 +1,22 @@
 # Hotel Booking + AI Voice Assistant (LINE MINI App)
 
-A hotel room booking system with LINE LIFF login and a Claude-powered AI
+A hotel room booking system with LINE LIFF login and a Gemini-powered AI
 assistant (text + voice) that can search rooms, check availability, and
 create real bookings through tool calling — using the exact same backend
 API and business rules as the normal booking UI.
 
 ## Status
 
-Project structure only (Phase 1 of 25). No servers run yet — frontend and
-backend scaffolding (Vite / Express) happen in Phase 2 and Phase 4.
+Through Phase 12 of 25 (see `docs/analysis.md` for the full roadmap).
+Core booking flow, LINE LIFF login, LINE push notifications, and
+text-based AI chat are built and tested. Tool calling for the AI
+assistant (Phase 13) is next.
+
+**Note on the AI provider**: the original plan (see `docs/analysis.md`)
+specified Claude API (Anthropic). Partway through Phase 12 this was
+switched to Google Gemini instead, to use Gemini's free API tier during
+development rather than paid Anthropic credits. The diagrams below
+reflect the current Gemini-based implementation.
 
 ## Architecture
 
@@ -34,7 +42,7 @@ flowchart TB
     end
 
     subgraph EXT["External Services"]
-        Claude["Claude API (Anthropic)\nAPI key lives here only"]
+        Gemini["Gemini API (Google)\nAPI key lives here only"]
         LineAPI["LINE Login API (verify id_token)"]
         LineMsg["LINE Messaging API (booking notifications)"]
     end
@@ -51,13 +59,13 @@ flowchart TB
     API --> Auth
     Auth -->|"verify token"| LineAPI
     API --> AICtrl
-    AICtrl -->|"system prompt + tools + message"| Claude
-    Claude -->|"tool use request"| AICtrl
+    AICtrl -->|"system prompt + tools + message"| Gemini
+    Gemini -->|"function call request"| AICtrl
     AICtrl --> ToolExec
     ToolExec -->|"query/insert"| Tables
     ToolExec -->|"result"| AICtrl
-    AICtrl -->|"result"| Claude
-    Claude -->|"final text response"| AICtrl
+    AICtrl -->|"result"| Gemini
+    Gemini -->|"final text response"| AICtrl
     AICtrl -->|"text response"| VoiceUI
     VoiceUI -->|"text-to-speech"| LIFF
     API -->|"normal CRUD"| Tables
@@ -77,21 +85,21 @@ sequenceDiagram
     participant B as Browser (Web Speech API)
     participant F as Frontend (voiceService.js)
     participant S as Backend (/api/ai/voice)
-    participant C as Claude API
+    participant C as Gemini API
     participant D as Supabase
 
     U->>B: "Book a Deluxe room for 2 nights"
     B->>F: SpeechRecognition result (text)
     F->>S: POST /api/ai/voice { text, conversationId }
     S->>C: message + tool schema + system prompt
-    C-->>S: tool call: check_room_availability
+    C-->>S: function call: check_room_availability
     S->>D: query availability (by room_type)
     D-->>S: available rooms
-    S->>C: tool result
-    C-->>S: reply text + (if enough info) tool call: create_booking
+    S->>C: function result
+    C-->>S: reply text + (if enough info) function call: create_booking
     S->>D: insert booking (SELECT ... FOR UPDATE, idempotency key)
     D-->>S: booking_code
-    S->>C: tool result
+    S->>C: function result
     C-->>S: final reply text
     S-->>F: { reply }
     F->>B: speechSynthesis.speak(reply)
@@ -100,9 +108,9 @@ sequenceDiagram
 
 ## Key design decisions
 
-- Frontend never talks to Claude or the Supabase service role directly —
+- Frontend never talks to Gemini or the Supabase service role directly —
   only to this backend.
-- The Tool Executor is a hard gate: Claude cannot call `create_booking`
+- The Tool Executor is a hard gate: the AI cannot call `create_booking`
   without the code first checking availability. Business rules live in
   code, not just in the system prompt.
 - Room search/availability always operates at the `room_type` level, not
@@ -116,10 +124,13 @@ sequenceDiagram
   prevent two simultaneous requests from double-booking the same room.
 - Every booking-creating request carries a client-generated idempotency
   key so a network retry can't create a duplicate booking.
+- Every booking-affecting request (create/list/cancel, AI chat) is gated
+  behind a LINE ID token verified against LINE's own API — the client's
+  claimed identity is never trusted directly.
 
 See `docs/analysis.md` for the full project analysis (all 25 phases,
 database schema, risk list, and scope decisions) this structure was built
-from.
+from — note its AI provider references predate the Gemini switch above.
 
 ## Repository layout
 
@@ -128,10 +139,12 @@ hotel-liff-frontend/   React + Vite frontend (Vercel)
 hotel-liff-backend/    Node.js + Express backend (Render)
 ```
 
-Each has its own `.env.example` — copy to `.env` and fill in values once
-Supabase (Phase 3) and the Anthropic API key (Phase 12) are set up.
+Each has its own `.env.example` — copy to `.env` and fill in values.
+Requires: a Supabase project (Phase 3), a LINE Login channel + LIFF app
+and a LINE Messaging API channel (Phase 10-11), and a Gemini API key
+(Phase 12, free tier at aistudio.google.com).
 
-## Local setup (once scaffolding lands in Phase 2 / Phase 4)
+## Local setup
 
 ```bash
 cd hotel-liff-backend

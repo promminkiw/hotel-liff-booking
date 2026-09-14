@@ -1,4 +1,4 @@
-import { sendChatMessage, getConversationHistory } from '../services/claude/chatService.js'
+import { sendChatMessage, getConversationHistory } from '../services/gemini/chatService.js'
 
 export async function postChat(req, res, next) {
   try {

@@ -617,3 +617,6 @@ Backend เรียก Supabase ด้วย Service Role Key ซึ่ง **by
    - **หน้า Admin ดู Booking ทั้งหมดแบบ Read-only** `AdminBookingList` + `GET /api/admin/bookings` (ข้อ 4.16, Phase 18)
    - **AI Human Handoff** — guardrail แนะนำเบอร์โทรโรงแรมเมื่อเจอคำขอนอกขอบเขต (ข้อ 4.17, Phase 12)
    - เพิ่ม **Phase 25: Buffer** เผื่อเวลาแก้ปัญหาที่พบตอนทดสอบจริงก่อนนำเสนอ Portfolio
+9. ⚠️ **เปลี่ยน AI provider จาก Claude API (Anthropic) เป็น Google Gemini API** (ระหว่าง Phase 12) — เหตุผล: Anthropic API ไม่มี free tier ต่อเนื่อง (Claude Pro subscription ใช้เรียก API ไม่ได้ เป็นคนละผลิตภัณฑ์กัน) ส่วน Gemini API มี free tier จริงผ่าน Google AI Studio ไม่ต้องผูกบัตรเครดิต เหมาะกับการพัฒนา/ทดสอบ Portfolio มากกว่า
+   - ทุกจุดในเอกสารนี้ (STEP 2 Architecture Diagram, STEP 3 Folder Structure ส่วน `services/claude/`, STEP 5.1 Technology Stack, และการอ้างอิง "Claude"/"Anthropic"/"ANTHROPIC_API_KEY" อื่น ๆ ทั้งหมด) **เป็นข้อมูลเดิมก่อนการเปลี่ยนแปลงนี้** โค้ดจริงใช้ `services/gemini/` และ `GEMINI_API_KEY` แทน — ดูสถานะปัจจุบันที่ [README.md](../README.md)
+   - Tool calling format, system prompt structure, และ guardrail (anti-hallucination, human handoff) ยังคงหลักการเดิมทั้งหมด เปลี่ยนแค่ provider เบื้องหลัง ไม่กระทบ business logic หรือ database schema

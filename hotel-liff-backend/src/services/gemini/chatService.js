@@ -1,13 +1,19 @@
 import { createSupabaseClient } from '../../config/supabaseClient.js'
 import { findOrCreateUser } from '../users.service.js'
 import { getHotelInfo } from '../hotelInfo.service.js'
-import { getClaudeClient, CLAUDE_MODEL } from './claudeClient.js'
+import { GEMINI_MODEL, generateContentWithRetry } from './geminiClient.js'
 import { buildSystemPrompt } from './systemPrompt.js'
 
-// How many past messages get sent back to Claude as context on every turn -
+// How many past messages get sent back to Gemini as context on every turn -
 // caps token cost per request regardless of how long the conversation has
 // grown in the database.
 const MAX_HISTORY_MESSAGES = 20
+
+// DB stores 'assistant' (matches the ai_messages role check constraint);
+// Gemini's contents array expects 'model' instead.
+function toGeminiRole(dbRole) {
+  return dbRole === 'assistant' ? 'model' : 'user'
+}
 
 async function getOrCreateConversation(supabase, userId) {
   const { data: existing, error: findError } = await supabase
@@ -66,18 +72,18 @@ export async function sendChatMessage({ lineUserId, displayName, message }) {
   const hotelInfo = await getHotelInfo()
   const systemPrompt = buildSystemPrompt(hotelInfo)
 
-  const claude = getClaudeClient()
-  const response = await claude.messages.create({
-    model: CLAUDE_MODEL,
-    max_tokens: 1024,
-    system: systemPrompt,
-    messages: [...history.map((m) => ({ role: m.role, content: m.content })), { role: 'user', content: message }],
+  const response = await generateContentWithRetry({
+    model: GEMINI_MODEL,
+    contents: [
+      ...history.map((m) => ({ role: toGeminiRole(m.role), parts: [{ text: m.content }] })),
+      { role: 'user', parts: [{ text: message }] },
+    ],
+    config: {
+      systemInstruction: systemPrompt,
+    },
   })
 
-  const replyText = response.content
-    .filter((block) => block.type === 'text')
-    .map((block) => block.text)
-    .join('\n')
+  const replyText = response.text
 
   await saveMessage(supabase, conversationId, 'assistant', replyText)
 
