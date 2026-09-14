@@ -58,3 +58,146 @@ a {
 .admin-page {
   padding: var(--space-4);
 }
+
+.error-text {
+  color: var(--color-danger);
+}
+
+.btn-primary {
+  display: inline-block;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+/* Room filter */
+.room-filter {
+  display: flex;
+  gap: var(--space-4);
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+.room-filter label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.room-filter select,
+.room-filter input {
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font-family);
+}
+
+/* Room grid + card */
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.room-card {
+  display: block;
+  text-decoration: none;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.room-card-image,
+.room-detail-image {
+  aspect-ratio: 4 / 3;
+  background: var(--color-border);
+}
+
+.room-card-image img,
+.room-detail-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.room-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.room-card-body {
+  padding: var(--space-3);
+}
+
+.room-card-type {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.room-card h3 {
+  margin: var(--space-1) 0;
+}
+
+.room-card-desc {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  margin: 0 0 var(--space-2);
+}
+
+.room-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.room-card-price {
+  font-weight: 600;
+}
+
+/* Room detail */
+.room-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.back-link {
+  text-decoration: none;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.room-detail-facts,
+.room-detail-amenities {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.room-detail-amenities li {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2);
+  font-size: 13px;
+}

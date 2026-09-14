@@ -1,31 +1,36 @@
 import { useEffect, useState } from 'react'
 import { fetchRooms } from '../../api/roomsApi.js'
+import RoomCard from '../../components/room/RoomCard.jsx'
+import RoomFilter from '../../components/room/RoomFilter.jsx'
 
 export default function Rooms() {
+  const [filters, setFilters] = useState({ roomType: '', guests: '' })
   const [rooms, setRooms] = useState(null)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetchRooms()
+    setError(null)
+    fetchRooms(filters)
       .then((data) => setRooms(data.rooms))
       .catch((err) => setError(err.message))
-  }, [])
+  }, [filters.roomType, filters.guests])
 
   return (
     <section>
       <h1>ห้องพัก</h1>
-      {error && <p>เกิดข้อผิดพลาด: {error}</p>}
+      <RoomFilter roomType={filters.roomType} guests={filters.guests} onChange={setFilters} />
+
+      {error && <p className="error-text">เกิดข้อผิดพลาด: {error}</p>}
       {!error && !rooms && <p>กำลังโหลด...</p>}
-      {rooms && (
-        <ul>
+      {!error && rooms && rooms.length === 0 && <p>ไม่พบห้องพักที่ตรงกับเงื่อนไข</p>}
+
+      {rooms && rooms.length > 0 && (
+        <div className="room-grid">
           {rooms.map((room) => (
-            <li key={room.id}>
-              {room.name} ({room.room_type}) — {room.price_per_night} บาท/คืน — พักได้สูงสุด {room.max_guests} คน
-            </li>
+            <RoomCard key={room.id} room={room} />
           ))}
-        </ul>
+        </div>
       )}
-      <p>รายการห้องแบบเต็มรูปแบบ (filter, รูปภาพ, การ์ด) จะถูกเพิ่มใน Phase 6</p>
     </section>
   )
 }
