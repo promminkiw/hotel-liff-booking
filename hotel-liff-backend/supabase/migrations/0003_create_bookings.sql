@@ -1,0 +1,1 @@
+-- creates the bookings table
