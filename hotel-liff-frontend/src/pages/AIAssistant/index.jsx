@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useUser } from '../../context/UserContext.jsx'
 import { fetchMessages, sendChatMessage } from '../../api/aiApi.js'
 import ChatBubble from '../../components/ai/ChatBubble.jsx'
+import MicButton from '../../components/ai/MicButton.jsx'
 import LoginPrompt from '../../components/common/LoginPrompt.jsx'
 
 export default function AIAssistant() {
@@ -74,11 +75,12 @@ export default function AIAssistant() {
       {error && error.status !== 401 && <p className="error-text">{error.message}</p>}
 
       <form className="chat-input-form" onSubmit={handleSend}>
+        <MicButton onTranscript={(text) => setInput(text)} disabled={sending} />
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="พิมพ์ข้อความ..."
+          placeholder="พิมพ์ข้อความ หรือกดไมค์เพื่อพูด..."
           disabled={sending}
         />
         <button type="submit" className="btn-primary" disabled={sending || !input.trim()}>

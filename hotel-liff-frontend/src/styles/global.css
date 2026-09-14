@@ -113,6 +113,49 @@ a {
   font-family: var(--font-family);
 }
 
+.mic-button-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.mic-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mic-button-active {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+}
+
+.mic-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mic-error {
+  position: absolute;
+  bottom: 42px;
+  left: 0;
+  white-space: nowrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2);
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
 .navbar {
   display: flex;
   align-items: center;
