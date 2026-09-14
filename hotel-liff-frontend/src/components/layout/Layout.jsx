@@ -1,4 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom'
+import PrivacyNotice from '../common/PrivacyNotice.jsx'
 
 const guestLinks = [
   { to: '/', label: 'หน้าแรก', end: true },
@@ -25,6 +26,7 @@ export default function Layout() {
           ))}
         </nav>
       </header>
+      <PrivacyNotice />
       <main className="page-container">
         <Outlet />
       </main>

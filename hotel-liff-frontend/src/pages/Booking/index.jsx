@@ -9,6 +9,8 @@ import { formatCurrency } from '../../utils/formatCurrency.js'
 import { ROOM_TYPES } from '../../utils/roomTypes.js'
 import AvailabilityCalendar from '../../components/booking/AvailabilityCalendar.jsx'
 import LoginPrompt from '../../components/common/LoginPrompt.jsx'
+import Loading from '../../components/common/Loading.jsx'
+import ErrorState from '../../components/common/ErrorState.jsx'
 
 export default function Booking() {
   const [searchParams] = useSearchParams()
@@ -107,7 +109,7 @@ export default function Booking() {
   }
 
   if (userLoading) {
-    return <p>กำลังโหลด...</p>
+    return <Loading />
   }
 
   if (!profile) {
@@ -214,7 +216,7 @@ export default function Booking() {
         </button>
       </form>
 
-      {checkError && <p className="error-text">{checkError}</p>}
+      {checkError && <ErrorState message={checkError} />}
 
       {availability && (
         <div className="availability-result">
@@ -228,7 +230,7 @@ export default function Booking() {
               </button>
             </>
           ) : (
-            <p className="error-text">ขออภัยครับ ไม่มีห้องว่างในช่วงวันที่เลือก</p>
+            <ErrorState message="ขออภัยครับ ไม่มีห้องว่างในช่วงวันที่เลือก" />
           )}
         </div>
       )}
@@ -236,7 +238,7 @@ export default function Booking() {
       {submitError && submitError.status === 401 && (
         <LoginPrompt onLogin={login} message="เซสชัน LINE หมดอายุ กรุณาเข้าสู่ระบบใหม่" />
       )}
-      {submitError && submitError.status !== 401 && <p className="error-text">{submitError.message}</p>}
+      {submitError && submitError.status !== 401 && <ErrorState message={submitError.message} />}
     </section>
   )
 }

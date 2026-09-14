@@ -5,6 +5,9 @@ import { useUser } from '../../context/UserContext.jsx'
 import { formatCurrency } from '../../utils/formatCurrency.js'
 import { formatDate } from '../../utils/formatDate.js'
 import LoginPrompt from '../../components/common/LoginPrompt.jsx'
+import Loading from '../../components/common/Loading.jsx'
+import EmptyState from '../../components/common/EmptyState.jsx'
+import ErrorState from '../../components/common/ErrorState.jsx'
 
 const STATUS_LABELS = {
   pending: 'รอดำเนินการ',
@@ -49,7 +52,7 @@ export default function MyBookings() {
   }
 
   if (userLoading) {
-    return <p>กำลังโหลด...</p>
+    return <Loading />
   }
 
   if (!profile) {
@@ -61,12 +64,12 @@ export default function MyBookings() {
       <h1>การจองของฉัน</h1>
 
       {error && error.status === 401 && <LoginPrompt onLogin={login} message="เซสชัน LINE หมดอายุ กรุณาเข้าสู่ระบบใหม่" />}
-      {error && error.status !== 401 && <p className="error-text">เกิดข้อผิดพลาด: {error.message}</p>}
-      {!error && !bookings && <p>กำลังโหลด...</p>}
+      {error && error.status !== 401 && <ErrorState message={`เกิดข้อผิดพลาด: ${error.message}`} />}
+      {!error && !bookings && <Loading />}
       {bookings && bookings.length === 0 && (
-        <p>
+        <EmptyState>
           ยังไม่มีการจอง — <Link to="/rooms">ดูห้องพัก</Link>
-        </p>
+        </EmptyState>
       )}
 
       {bookings && bookings.length > 0 && (
@@ -88,7 +91,7 @@ export default function MyBookings() {
                   {cancelError && cancelError.status === 401 && (
                     <LoginPrompt onLogin={login} message="เซสชัน LINE หมดอายุ กรุณาเข้าสู่ระบบใหม่" />
                   )}
-                  {cancelError && cancelError.status !== 401 && <p className="error-text">{cancelError.message}</p>}
+                  {cancelError && cancelError.status !== 401 && <ErrorState message={cancelError.message} />}
 
                   {canCancel && confirmingId !== booking.id && (
                     <button className="btn-link-danger" onClick={() => setConfirmingId(booking.id)}>

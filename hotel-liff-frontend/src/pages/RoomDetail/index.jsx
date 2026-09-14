@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchRoomById } from '../../api/roomsApi.js'
 import { formatCurrency } from '../../utils/formatCurrency.js'
+import Loading from '../../components/common/Loading.jsx'
+import ErrorState from '../../components/common/ErrorState.jsx'
 
 export default function RoomDetail() {
   const { roomId } = useParams()
@@ -16,8 +18,8 @@ export default function RoomDetail() {
       .catch((err) => setError(err.message))
   }, [roomId])
 
-  if (error) return <p className="error-text">เกิดข้อผิดพลาด: {error}</p>
-  if (!room) return <p>กำลังโหลด...</p>
+  if (error) return <ErrorState message={`เกิดข้อผิดพลาด: ${error}`} />
+  if (!room) return <Loading />
 
   return (
     <section className="room-detail">

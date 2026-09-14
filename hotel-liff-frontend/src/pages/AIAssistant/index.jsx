@@ -4,6 +4,8 @@ import { fetchMessages, sendChatMessage } from '../../api/aiApi.js'
 import ChatBubble from '../../components/ai/ChatBubble.jsx'
 import MicButton from '../../components/ai/MicButton.jsx'
 import LoginPrompt from '../../components/common/LoginPrompt.jsx'
+import Loading from '../../components/common/Loading.jsx'
+import ErrorState from '../../components/common/ErrorState.jsx'
 import { isSpeechSynthesisSupported, speak, stopSpeaking } from '../../services/voiceService.js'
 
 const VOICE_PREF_KEY = 'hotel_ai_voice_enabled'
@@ -79,7 +81,7 @@ export default function AIAssistant() {
   }
 
   if (userLoading) {
-    return <p>กำลังโหลด...</p>
+    return <Loading />
   }
 
   if (!profile) {
@@ -103,7 +105,7 @@ export default function AIAssistant() {
       </div>
 
       <div className="chat-window">
-        {loadingHistory && <p>กำลังโหลด...</p>}
+        {loadingHistory && <Loading />}
         {!loadingHistory && messages.length === 0 && (
           <p className="chat-empty">สวัสดีครับ มีอะไรให้ช่วยเกี่ยวกับโรงแรมไหมครับ?</p>
         )}
@@ -116,7 +118,7 @@ export default function AIAssistant() {
       {error && error.status === 401 && (
         <LoginPrompt onLogin={login} message="เซสชัน LINE หมดอายุ กรุณาเข้าสู่ระบบใหม่" />
       )}
-      {error && error.status !== 401 && <p className="error-text">{error.message}</p>}
+      {error && error.status !== 401 && <ErrorState message={error.message} />}
 
       <form className="chat-input-form" onSubmit={handleSend}>
         <MicButton onTranscript={(text) => setInput(text)} disabled={sending} />

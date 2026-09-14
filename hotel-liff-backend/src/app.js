@@ -4,6 +4,7 @@ import cors from 'cors'
 import morgan from 'morgan'
 import { corsOptions } from './config/cors.js'
 import healthRoutes from './routes/health.routes.js'
+import hotelInfoRoutes from './routes/hotelInfo.routes.js'
 import roomsRoutes from './routes/rooms.routes.js'
 import bookingsRoutes from './routes/bookings.routes.js'
 import aiRoutes from './routes/ai.routes.js'
@@ -19,6 +20,7 @@ export function createApp() {
   app.use(morgan('dev'))
 
   app.use('/health', healthRoutes)
+  app.use('/api/hotel-info', hotelInfoRoutes)
   app.use('/api/rooms', roomsRoutes)
   app.use('/api/bookings', bookingsRoutes)
   app.use('/api/ai', aiRoutes)
