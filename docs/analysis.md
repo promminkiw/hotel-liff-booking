@@ -13,7 +13,7 @@
 
 1. **ระบบจองห้องพักปกติ (Core Booking System)** — ผู้ใช้ดูโรงแรม ดูห้อง เช็คห้องว่าง จอง ดูรายการจอง ยกเลิกจอง ผ่าน UI ธรรมดา
 2. **ระบบยืนยันตัวตนผ่าน LINE (LIFF Integration)** — ผู้ใช้ล็อกอินด้วย LINE โดยไม่ต้องสมัครสมาชิกแยก
-3. **AI Voice Assistant** — ผู้ใช้พูดคุยกับ AI ด้วยเสียง โดย AI สามารถ "ลงมือทำ" งานจริงในระบบได้ (ไม่ใช่แค่ตอบคำถาม) ผ่าน Tool Calling ของ Claude
+3. **AI Voice Assistant** — ผู้ใช้พูดคุยกับ AI ด้วยเสียง โดย AI สามารถ "ลงมือทำ" งานจริงในระบบได้ (ไม่ใช่แค่ตอบคำถาม) ผ่าน Tool Calling ของ Gemini
 
 ทั้งสามส่วนนี้ใช้ **Backend และ Database ชุดเดียวกัน** — Booking ที่สร้างผ่านหน้าเว็บปกติ กับ Booking ที่สร้างผ่าน AI ต้องเป็น flow เดียวกันทุกจุด (ผ่าน API เดียวกัน, ตรวจสอบ availability แบบเดียวกัน) เพื่อไม่ให้เกิดข้อมูลไม่ตรงกัน
 
@@ -25,7 +25,7 @@
 | **AI Tool Calling ต้องมี Guardrail** | AI ห้ามสร้าง booking ได้เองโดยไม่เช็ค availability ก่อน ต้องบังคับลำดับ: check → create เสมอ |
 | **Multi-turn Conversation สำหรับจอง** | ถ้าข้อมูลไม่ครบ (เช่น ไม่บอกวันที่) AI ต้องถามกลับ และ "จำ" บริบทของบทสนทนาไว้ได้ |
 | **Voice Architecture ต้องเปลี่ยน Provider ได้ในอนาคต** | เริ่มด้วย Web Speech API (ฟรี) แต่ต้องออกแบบ interface แยกไว้ ไม่ผูกกับ Browser API โดยตรง |
-| **Security: API Key ต้องอยู่ Backend เท่านั้น** | ทั้ง Claude API Key และ Supabase Service Role Key ห้ามหลุดไป Frontend เด็ดขาด |
+| **Security: API Key ต้องอยู่ Backend เท่านั้น** | ทั้ง Gemini API Key และ Supabase Service Role Key ห้ามหลุดไป Frontend เด็ดขาด |
 | **LINE LIFF Context** | ต้องแยกให้ออกระหว่าง "รันใน LINE app" กับ "เปิดใน browser ธรรมดา" เพราะพฤติกรรมบางอย่างต่างกัน (เช่น permission microphone ใน LINE in-app browser อาจมีข้อจำกัด) |
 | **Race Condition ตอนจองห้อง** | สอง user กดจองห้องเดียวกัน วันเดียวกัน พร้อมกันได้ ถ้าเช็ค availability แล้วค่อย insert แบบธรรมดา ทั้งสอง request อาจเช็คผ่านพร้อมกันก่อน insert ทัน ทำให้ได้ booking ซ้อนกันจริง ต้องป้องกันที่ระดับ database ไม่ใช่แค่โค้ด |
 | **LINE ID Token ต้อง Verify จริงทุกครั้ง** | ห้ามเชื่อ `line_user_id` ที่ frontend ส่งมาตรง ๆ (ปลอมง่ายมาก) backend ต้อง verify ID Token กับ LINE API จริงในทุก request ที่กระทบข้อมูล (booking, cancel) |
@@ -39,9 +39,9 @@
 
 - **Web Speech API ใน LINE in-app browser**: LINE MINI App เปิดผ่าน WebView ของ LINE ซึ่งบางแพลตฟอร์ม (โดยเฉพาะ iOS) อาจไม่รองรับ `SpeechRecognition` API เต็มรูปแบบ หรือรองรับไม่เท่ากับ Chrome/Safari ปกติ → ต้องมี fallback (เช่น พิมพ์ข้อความแทนพูด) ตั้งแต่ Phase 11 และทดสอบบนอุปกรณ์จริงให้เร็วที่สุด
 - **LINE MINI App ต้องสมัครเป็น LINE Developer + ผ่านการตรวจสอบ**: การขึ้นระบบจริงบน LINE ต้องสมัคร LINE Login Channel และ LIFF app ผ่าน LINE Developers Console (ใช้ได้ฟรีสำหรับ Demo/Sandbox แต่การเผยแพร่จริงอาจต้องยื่นขอ LINE MINI App certification ซึ่งมีขั้นตอนเพิ่มเติมและใช้เวลา) — สำหรับ Portfolio เราจะใช้ LIFF app แบบ "Web app type" ซึ่งใช้งานได้เต็มรูปแบบโดยไม่ต้องรอ certification
-- **ค่าใช้จ่าย Claude API**: ทุกครั้งที่ AI ตอบ (โดยเฉพาะที่มี Tool Calling หลาย turn) จะมีค่าใช้จ่ายตาม token จึงควรจำกัดการทดสอบและใส่ rate limiting ป้องกันการเรียกซ้ำเกินจำเป็น
+- **การใช้งาน Gemini API เกิน free tier**: Gemini API มี free tier ให้ใช้ แต่มี rate limit (จำนวน request ต่อนาที/วัน) ถ้า Tool Calling เข้าหลาย turn ต่อ 1 คำถามบ่อยเกินไปอาจชนขีดจำกัด จึงควรจำกัดการทดสอบและใส่ rate limiting ป้องกันการเรียกซ้ำเกินจำเป็น
 - **Time zone**: การจองห้อง (check-in/check-out) ต้องตกลง time zone ให้ชัดเจนตั้งแต่ระดับ Database (แนะนำเก็บเป็น `date` ไม่ใช่ `timestamp` เพราะ check-in/check-out เป็นเรื่องของ "วัน" ไม่ใช่เวลา)
-- **ค่าใช้จ่าย Claude API พุ่งจากการเรียกซ้ำ/loop**: ถ้า user กด microphone รัว ๆ หรือ AI เข้า loop tool-calling หลายรอบใน 1 คำถาม ค่าใช้จ่ายจะเพิ่มโดยไม่จำเป็น ต้องมี rate limit และจำกัดจำนวนรอบ tool-call ต่อ 1 turn
+- **ชน rate limit ของ Gemini free tier จากการเรียกซ้ำ/loop**: ถ้า user กด microphone รัว ๆ หรือ AI เข้า loop tool-calling หลายรอบใน 1 คำถาม จะเสี่ยงชนขีดจำกัด request ต่อนาที/วันของ free tier โดยไม่จำเป็น ต้องมี rate limit และจำกัดจำนวนรอบ tool-call ต่อ 1 turn
 - **Booking ซ้ำจาก Retry**: ถ้า network หลุดแล้ว frontend หรือ AI retry คำขอ create_booking ซ้ำ อาจสร้าง booking 2 รายการโดยไม่ตั้งใจ ต้องมีกลไกป้องกัน (idempotency)
 - **ราคาที่จองไปแล้วต้องไม่เปลี่ยนตามราคาปัจจุบัน**: เมื่อ admin แก้ `price_per_night` ราคาห้อง booking เก่าที่จองไปแล้วต้อง "คงราคาเดิมตอนจอง" ไว้เสมอ (เก็บใน `bookings.total_price` ซึ่งมีอยู่แล้ว แต่ต้องย้ำใน business logic ว่าห้ามคำนวณราคาจาก `rooms.price_per_night` ปัจจุบันซ้ำตอนแสดงผล booking เก่า)
 - **หน้า Admin เพิ่มห้องใหม่ไม่ได้**: ตามที่ออกแบบไว้ หน้า Admin แก้ได้แค่ราคา/สถานะของห้องที่มีอยู่แล้ว ถ้าโรงแรมมีห้องใหม่จริง (เช่น ต่อเติมอาคาร) ยังไม่มีทางเพิ่มห้องผ่าน UI ต้องตัดสินใจว่าจะเพิ่มฟอร์ม "เพิ่มห้องใหม่" ในหน้า Admin ด้วยหรือไม่ (ดูข้อ 4.7)
@@ -51,12 +51,12 @@
 - **Environment Variable ขาดหายตอน Deploy**: ถ้า `.env` บน production ขาดตัวแปรสำคัญ (เช่น ANTHROPIC_API_KEY) โดยไม่ validate ตอน start server จะรันขึ้นมาได้ปกติแต่พังทันทีตอนมีคนเรียกใช้ฟีเจอร์ที่เกี่ยวข้องจริง ซึ่ง debug ยากกว่าที่ควร
 - **LIFF Token/Admin JWT หมดอายุระหว่างใช้งาน**: ถ้าไม่มี logic รองรับ user จะเจอ error ค้างโดยไม่รู้สาเหตุเมื่อ token หมดอายุกลางบทสนทนาหรือกลางการแก้ไขราคา
 - **เปิดแอปนอก LINE App**: ถ้ามีคนเปิดลิงก์ผ่าน browser ปกติ (ไม่ผ่าน LINE) LIFF SDK จะทำงานไม่เต็มรูปแบบหรือ error เงียบ ๆ ต้องมีข้อความแจ้งชัดเจน
-- **ประวัติสนทนา AI ยาวขึ้นเรื่อย ๆ**: ถ้าไม่จำกัดจำนวนข้อความที่ส่งกลับไปให้ Claude ทุกครั้ง ต้นทุนต่อ request จะเพิ่มขึ้นเรื่อย ๆ ตามความยาวบทสนทนา
+- **ประวัติสนทนา AI ยาวขึ้นเรื่อย ๆ**: ถ้าไม่จำกัดจำนวนข้อความที่ส่งกลับไปให้ Gemini ทุกครั้ง ขนาด request ต่อครั้งจะเพิ่มขึ้นเรื่อย ๆ ตามความยาวบทสนทนา เสี่ยงชน rate limit เร็วขึ้น
 - **Admin มองไม่เห็น Booking เลย**: หน้า Admin ที่ออกแบบไว้แก้ได้แค่ราคา/สถานะห้อง แต่พนักงานโรงแรมจริงต้องดูว่าใครจองอะไร วันไหนมีแขกเข้าพัก ซึ่งสำคัญกว่าการแก้ราคาด้วยซ้ำ
 - **ไม่มีขีดจำกัดการจองล่วงหน้า/ความยาวเข้าพัก**: ถ้าไม่จำกัด ใครจะจองล่วงหน้ากี่ปีหรือพักยาวกี่คืนก็ได้ ทำให้ availability calendar ดูแปลกและเปิดช่องให้ทดสอบ/สแปมได้ง่าย
 - **AI ไม่มีทาง "ส่งต่อให้คน" เมื่อช่วยไม่ได้**: ถ้าแขกถามเรื่องที่ AI จัดการไม่ได้ (ขอคืนเงิน, จองกรุ๊ปทัวร์, ร้องเรียน) ต้องมี guardrail ให้แนะนำเบอร์โทรโรงแรมแทนที่จะพยายามตอบเองหรือค้างไม่รู้จะทำอะไรต่อ
 
-> **อัปเดตหลังตรวจสอบร่วมกัน**: ยืนยันขอบเขต MVP ตามข้อ 1.4, ยืนยันเพิ่มตาราง `ai_conversations` / `ai_messages` / `room_images` (ดูข้อ 4.5), Hosting เป็น **Vercel (Frontend) + Render (Backend)**, ยังไม่มี Anthropic API Key / Supabase project (จะแนะนำวิธีสมัครใน Phase 3 และ Phase 12), และเพิ่ม **หน้า Admin เล็ก ๆ สำหรับแก้ราคา/สถานะห้อง** (ดูข้อ 1.4 และ 4.7 — สำคัญมากสำหรับการปรับราคาห้องช่วงเทศกาล)
+> **อัปเดตหลังตรวจสอบร่วมกัน**: ยืนยันขอบเขต MVP ตามข้อ 1.4, ยืนยันเพิ่มตาราง `ai_conversations` / `ai_messages` / `room_images` (ดูข้อ 4.5), Hosting เป็น **Vercel (Frontend) + Render (Backend)**, ยังไม่มี Gemini API Key / Supabase project (จะแนะนำวิธีสมัครใน Phase 3 และ Phase 12), และเพิ่ม **หน้า Admin เล็ก ๆ สำหรับแก้ราคา/สถานะห้อง** (ดูข้อ 1.4 และ 4.7 — สำคัญมากสำหรับการปรับราคาห้องช่วงเทศกาล)
 
 ### 1.4 ขอบเขตที่จะ "ไม่ทำ" ในเวอร์ชัน Portfolio นี้ (เสนอเพื่อความชัดเจน)
 
@@ -97,7 +97,7 @@ flowchart TB
     end
 
     subgraph EXT["External Services"]
-        Claude["Claude API (Anthropic)\nAPI Key อยู่ที่นี่เท่านั้น"]
+        Gemini["Gemini API (Google)\nAPI Key อยู่ที่นี่เท่านั้น"]
         LineAPI["LINE Login API\n(verify id_token)"]
         LineMsg["LINE Messaging API\n(ส่งแจ้งเตือนจอง/ยกเลิก)"]
     end
@@ -114,13 +114,13 @@ flowchart TB
     API --> Auth
     Auth -->|"Verify Token"| LineAPI
     API --> AICtrl
-    AICtrl -->|"System Prompt + Tool Schema + User Message"| Claude
-    Claude -->|"Tool Use Request"| AICtrl
+    AICtrl -->|"System Prompt + Tool Schema + User Message"| Gemini
+    Gemini -->|"Function Call Request"| AICtrl
     AICtrl --> ToolExec
     ToolExec -->|"Query/Insert"| Tables
     ToolExec -->|"ผลลัพธ์"| AICtrl
-    AICtrl -->|"ส่งผลลัพธ์กลับ"| Claude
-    Claude -->|"Final Text Response"| AICtrl
+    AICtrl -->|"ส่งผลลัพธ์กลับ"| Gemini
+    Gemini -->|"Final Text Response"| AICtrl
     AICtrl -->|"Text Response"| VoiceUI
     VoiceUI -->|"Text-to-Speech (Browser)"| LIFF
     API -->|"CRUD ปกติ (Rooms/Bookings)"| Tables
@@ -140,7 +140,7 @@ sequenceDiagram
     participant B as Browser (Web Speech API)
     participant F as Frontend (voiceService.js)
     participant S as Backend (/api/ai/voice)
-    participant C as Claude API
+    participant C as Gemini API
     participant D as Supabase
 
     U->>B: พูด "จองห้อง Deluxe 2 คืน"
@@ -163,13 +163,13 @@ sequenceDiagram
 
 ### 2.3 หลักการสำคัญของ Architecture
 
-- **Frontend ไม่คุยกับ Claude API หรือ Supabase Service Role โดยตรงเด็ดขาด** — คุยกับ Backend เท่านั้น (Frontend ใช้ Supabase Anon Key ได้เฉพาะกรณีอ่านข้อมูล public เช่นรูปภาพจาก Storage หากจำเป็น)
-- **Tool Executor เป็นตัวกลางบังคับ business rule** — ไม่ปล่อยให้ Claude เรียก `create_booking` ตรง ๆ โดยไม่ผ่านการเช็ค availability ในโค้ด (ไม่พึ่งแค่ prompt บอก Claude เฉย ๆ)
+- **Frontend ไม่คุยกับ Gemini API หรือ Supabase Service Role โดยตรงเด็ดขาด** — คุยกับ Backend เท่านั้น (Frontend ใช้ Supabase Anon Key ได้เฉพาะกรณีอ่านข้อมูล public เช่นรูปภาพจาก Storage หากจำเป็น)
+- **Tool Executor เป็นตัวกลางบังคับ business rule** — ไม่ปล่อยให้ Gemini เรียก `create_booking` ตรง ๆ โดยไม่ผ่านการเช็ค availability ในโค้ด (ไม่พึ่งแค่ prompt บอก Gemini เฉย ๆ)
 - **voiceService.js เป็น abstraction layer** — หน้า UI เรียกใช้ `voiceService.startListening()`, `voiceService.speak(text)` โดยไม่รู้ว่าเบื้องหลังเป็น Web Speech API หรือ external provider ทำให้เปลี่ยนได้ในอนาคตโดยไม่กระทบ UI
-- **Rate Limiting อยู่ที่ Backend เท่านั้น** — จำกัดจำนวน request ต่อ user ต่อนาทีสำหรับ `/api/ai/*` และจำกัดจำนวนรอบ tool-calling สูงสุดต่อ 1 คำถาม (เช่น ไม่เกิน 5 รอบ) เพื่อคุมค่าใช้จ่าย Claude API และป้องกัน AI เข้า loop
+- **Rate Limiting อยู่ที่ Backend เท่านั้น** — จำกัดจำนวน request ต่อ user ต่อนาทีสำหรับ `/api/ai/*` และจำกัดจำนวนรอบ tool-calling สูงสุดต่อ 1 คำถาม (เช่น ไม่เกิน 5 รอบ) เพื่อไม่ให้ชน rate limit ของ Gemini free tier และป้องกัน AI เข้า loop
 - **LINE Messaging API แยกจาก LIFF Login** — ใช้ LINE Login/LIFF สำหรับยืนยันตัวตนในแอป แต่ใช้ LINE Messaging API (Push Message) เพื่อส่งแจ้งเตือนสถานะการจอง/ยกเลิกกลับไปที่แชท LINE ของผู้ใช้ ทำให้ประสบการณ์ใกล้เคียงระบบจริงมากขึ้น
 - **Health Check Endpoint** — `GET /health` คืนสถานะ server และการเชื่อมต่อ Supabase ใช้สำหรับ Render ตรวจสอบว่า service ยังทำงานปกติ (uptime monitoring)
-- **Fail Fast บน Environment Variable** — ตอน server start ต้อง validate ว่าตัวแปรสำคัญทั้งหมดมีครบ (ANTHROPIC_API_KEY, SUPABASE_SERVICE_ROLE_KEY, ADMIN_PASSWORD, ADMIN_SECRET ฯลฯ) ถ้าขาดตัวใดตัวหนึ่งให้ server หยุดทำงานทันทีพร้อม error message บอกชัดว่าขาดตัวแปรอะไร แทนที่จะรันขึ้นมาแล้วพังทีหลังตอนมีคนเรียกใช้จริง
+- **Fail Fast บน Environment Variable** — ตอน server start ต้อง validate ว่าตัวแปรสำคัญทั้งหมดมีครบ (GEMINI_API_KEY, SUPABASE_SERVICE_ROLE_KEY, ADMIN_PASSWORD, ADMIN_SECRET ฯลฯ) ถ้าขาดตัวใดตัวหนึ่งให้ server หยุดทำงานทันทีพร้อม error message บอกชัดว่าขาดตัวแปรอะไร แทนที่จะรันขึ้นมาแล้วพังทีหลังตอนมีคนเรียกใช้จริง
 - **CORS จำกัดเฉพาะ Frontend Domain** — backend อนุญาตเฉพาะ origin ของ frontend บน Vercel เท่านั้น (ตั้งค่าผ่าน environment variable `ALLOWED_ORIGIN`) พร้อมใส่ Helmet middleware ตั้งค่า security headers พื้นฐาน
 - **RLS (Row Level Security) เปิดใช้งานทุกตาราง** — แม้ backend จะใช้ Service Role Key ที่ bypass RLS แต่ยังต้องเปิด RLS และตั้ง policy ปิดกั้น Anon Key ไม่ให้เข้าถึงข้อมูลได้โดยตรง เผื่อกรณี Anon Key ถูกใช้ผิดที่หรือหลุดออกไป
 - **สถานะ Booking เริ่มต้นเป็น `confirmed` ทันที (ไม่มีขั้นตอนอนุมัติแยก)** — เนื่องจากไม่มีระบบชำระเงินในเวอร์ชันนี้ Booking ที่ผ่านการเช็ค availability สำเร็จจะถูกสร้างด้วยสถานะ `confirmed` ทันที (ไม่ค้างที่ `pending`) เพื่อให้ flow จบสมบูรณ์และ demo ได้ครบวงจร ส่วนสถานะ `pending` จะสงวนไว้สำหรับกรณีในอนาคตที่เพิ่มระบบชำระเงินจริง (ต้องรอชำระก่อนจึง confirm)
@@ -266,9 +266,11 @@ hotel-liff-backend/
 │   │   ├── rooms.service.js        # business logic ห้องพัก
 │   │   ├── bookings.service.js     # business logic + overlap check + idempotency + cancellation policy
 │   │   ├── hotelInfo.service.js
+│   │   ├── users.service.js        # find-or-create user โดย line_user_id (ใช้ร่วมกันทั้ง booking และ AI chat)
 │   │   ├── lineMessaging.service.js # ส่ง Push Message แจ้งเตือนจอง/ยกเลิกผ่าน LINE Messaging API
-│   │   └── claude/
-│   │       ├── claudeClient.js     # เรียก Anthropic SDK
+│   │   └── gemini/
+│   │       ├── geminiClient.js     # เรียก Google Gemini SDK (@google/genai) พร้อม retry สำหรับ 429/503
+│   │       ├── chatService.js      # conversation persistence + เรียก Gemini + จำกัดความยาวประวัติ
 │   │       ├── systemPrompt.js     # system prompt ของ AI + guardrail ส่งต่อให้คนเมื่อ AI ช่วยไม่ได้
 │   │       ├── toolSchemas.js      # schema ของ tool ทั้งหมด (search/check ทำงานระดับ room_type)
 │   │       └── toolExecutor.js     # map tool name -> function จริง + guardrail
@@ -514,14 +516,14 @@ Backend เรียก Supabase ด้วย Service Role Key ซึ่ง **by
 |---|---|---|
 | Frontend | React + Vite + JavaScript | UI ทั้งหมด, เรียก Backend API |
 | LINE Integration | LIFF SDK + LINE Messaging API | LIFF: Login/ดึง Profile/ID Token — Messaging API: ส่ง Push Message แจ้งเตือนจอง/ยกเลิก |
-| Backend | Node.js + Express | REST API, business logic, เชื่อม Claude + Supabase |
+| Backend | Node.js + Express | REST API, business logic, เชื่อม Gemini + Supabase |
 | Testing | Jest (หรือ Vitest) | Unit test สำหรับ date overlap และ booking service |
 | Security Middleware | Helmet + cors (npm packages) | Security headers พื้นฐาน + จำกัด CORS เฉพาะ frontend domain |
 | Error Monitoring (optional) | Sentry (free tier) | จับ error จริงบน production |
 | CI/CD | GitHub Actions | รัน test อัตโนมัติ + auto deploy เมื่อ push main |
 | Database | Supabase (PostgreSQL) | เก็บข้อมูล users/rooms/bookings/hotel_info |
 | Storage | Supabase Storage (ถ้าจำเป็น) | เก็บรูปห้องพัก |
-| AI | Claude API (Anthropic) | วิเคราะห์ intent, tool calling, ตอบคำถาม |
+| AI | Gemini API (Google) | วิเคราะห์ intent, tool calling, ตอบคำถาม — ใช้ free tier |
 | Voice (เริ่มต้น) | Web Speech API (Browser) | Speech-to-Text, Text-to-Speech ฟรี |
 | Frontend Hosting | **Vercel** (ยืนยันแล้ว) | Deploy static site ฟรีสำหรับ Portfolio |
 | Backend Hosting | **Render** (ยืนยันแล้ว) | Deploy Express server แบบ long-running ไม่มีข้อจำกัด serverless timeout/cold start |
@@ -533,14 +535,14 @@ Backend เรียก Supabase ด้วย Service Role Key ซึ่ง **by
 | Supabase | ฟรี (Free tier) | รองรับ 500MB database, เพียงพอสำหรับ Demo |
 | Vercel/Netlify (Frontend) | ฟรี | Free tier เพียงพอสำหรับ Portfolio |
 | Render (Backend) | ฟรี–$7/เดือน | Free tier มี sleep mode หลังไม่ใช้งาน (~15 นาที) ทำให้ request แรกช้า ถ้าต้องการ demo ตลอดเวลาไม่มีดีเลย์ ควรอัปเป็น Starter plan (~$7/เดือน) ก่อนนำเสนอ Portfolio |
-| Claude API (Anthropic) | จ่ายตามการใช้งาน (pay-as-you-go) | ค่าใช้จ่ายขึ้นกับ token และรุ่นโมเดลที่เลือก — สำหรับ Demo/Portfolio ปริมาณการใช้งานต่ำ มักอยู่ในหลักไม่กี่ดอลลาร์ต่อเดือน ควรตรวจสอบราคาปัจจุบันที่ docs.claude.com ก่อนเริ่มเนื่องจากราคาอาจเปลี่ยนแปลง |
+| Gemini API (Google) | ฟรี (Free tier ผ่าน Google AI Studio) | ไม่ต้องผูกบัตรเครดิต มี rate limit (จำนวน request ต่อนาที/วัน) เพียงพอสำหรับพัฒนา/ทดสอบ/Demo Portfolio — ถ้า deploy ให้คนใช้จริงจำนวนมากค่อยพิจารณาอัปเกรดเป็น paid tier ภายหลัง |
 | LINE Developers (LIFF + Messaging API) | ฟรี | สร้าง LIFF app และ Messaging API Channel สำหรับทดสอบและ Demo ได้ฟรี ไม่ต้องรอ certification สำหรับ Web app type (Messaging API ฟรีในปริมาณ push message ต่อเดือนที่เพียงพอสำหรับ Demo) |
 | Web Speech API | ฟรี | เป็นความสามารถของ Browser ไม่มีค่าใช้จ่ายเพิ่ม |
 | Domain (ถ้าต้องการ custom domain) | ~$10-15/ปี | ไม่จำเป็นสำหรับ Portfolio (ใช้ subdomain ฟรีจาก Vercel/Railway ได้) |
 | Sentry (Error Monitoring) | ฟรี | Free tier เพียงพอสำหรับ Portfolio/Demo |
 | GitHub Actions (CI/CD) | ฟรี | ฟรีสำหรับ public repository และมี free minutes สำหรับ private repository |
 
-**สรุป**: โปรเจกต์นี้สามารถสร้างและ Demo ได้โดยแทบไม่มีค่าใช้จ่ายคงที่ ยกเว้นค่า Claude API ที่จ่ายตามการใช้งานจริง (แนะนำตั้ง budget limit ใน Anthropic Console ไว้ป้องกันการใช้เกิน)
+**สรุป**: โปรเจกต์นี้สามารถสร้างและ Demo ได้โดยแทบไม่มีค่าใช้จ่ายเลย (Gemini API ใช้ free tier) ยกเว้นถ้าต้องการอัป Render เป็น Starter plan เพื่อไม่ให้ backend sleep ตอนนำเสนอ Portfolio จริง
 
 ---
 
@@ -559,9 +561,9 @@ Backend เรียก Supabase ด้วย Service Role Key ซึ่ง **by
 | 9 | Booking Cancellation Policy | เพิ่มเงื่อนไขยกเลิกตาม `cancellation_days_before`, ข้อความ error ที่เข้าใจง่ายเมื่อยกเลิกไม่ได้, แสดงสถานะ `completed` แบบ virtual สำหรับ booking ที่ผ่าน check-out ไปแล้ว (ข้อ 4.14) |
 | 10 | LINE LIFF / LINE MINI App | Login, Get Profile, ผูก user_id กับ LINE, verify ID Token จริงกับ LINE API ทุก request สำคัญ, `LiffGuard` แจ้งเตือนเมื่อเปิดนอก LINE App, จัดการ token หมดอายุระหว่างใช้งาน |
 | 11 | LINE Messaging API (Notification) | ส่ง Push Message แจ้งเตือนเมื่อจอง/ยกเลิกสำเร็จ กลับเข้าแชท LINE ผู้ใช้ |
-| 12 | Claude AI Chat | หน้า AI Assistant แบบข้อความ (ยังไม่มีเสียง), เชื่อม Claude API, log การเรียก tool ลง `ai_messages`, **จำกัดความยาวประวัติสนทนา** ที่ส่งกลับไปให้ Claude แต่ละครั้ง, system prompt ห้าม AI ตอบข้อมูล dynamic จากความจำตัวเอง, **guardrail ส่งต่อให้คน** เมื่อเจอคำขอนอกขอบเขต (ข้อ 4.17) |
+| 12 | Gemini AI Chat | หน้า AI Assistant แบบข้อความ (ยังไม่มีเสียง), เชื่อม Gemini API, log การเรียก tool ลง `ai_messages`, **จำกัดความยาวประวัติสนทนา** ที่ส่งกลับไปให้ Gemini แต่ละครั้ง, system prompt ห้าม AI ตอบข้อมูล dynamic จากความจำตัวเอง, **guardrail ส่งต่อให้คน** เมื่อเจอคำขอนอกขอบเขต (ข้อ 4.17) — เปลี่ยนจาก Claude (Anthropic) มาเป็น Gemini (Google) ระหว่าง Phase นี้เพื่อใช้ free tier (ดูข้อ 9 ในสรุปการตัดสินใจ) |
 | 13 | Tool Calling ให้ AI | เพิ่ม search_rooms, check_availability, create_booking ฯลฯ ทำงานระดับ room_type ตามข้อ 4.13 (เรียก idempotency + overlap logic เดียวกับ Phase 7 ไม่มีทางลัด) |
-| 14 | Rate Limiting & Cost Control | จำกัด request ต่อ user ต่อนาทีสำหรับ `/api/ai/*`, จำกัดจำนวนรอบ tool-call สูงสุดต่อ 1 คำถาม |
+| 14 | Rate Limiting & Cost Control | จำกัด request ต่อ user ต่อนาทีสำหรับ `/api/ai/*`, จำกัดจำนวนรอบ tool-call สูงสุดต่อ 1 คำถาม (เพื่อไม่ให้ชน rate limit ของ Gemini free tier) |
 | 15 | Speech-to-Text | เพิ่มปุ่ม microphone, Web Speech Recognition |
 | 16 | Text-to-Speech | AI พูดตอบด้วยเสียง |
 | 17 | รวม AI + Booking | ทดสอบ flow เต็มรูปแบบ: พูด → จอง → ยืนยัน → ได้รับแจ้งเตือนใน LINE |
@@ -583,7 +585,7 @@ Backend เรียก Supabase ด้วย Service Role Key ซึ่ง **by
 1. ✅ ขอบเขต MVP ตามข้อ 1.4 (ไม่ทำ payment จริง, ไม่ทำ admin dashboard เต็มรูปแบบ ยกเว้นหน้าแก้ราคา/สถานะห้อง)
 2. ✅ เพิ่มตาราง `ai_conversations`, `ai_messages`, `room_images`
 3. ✅ Hosting: **Vercel (Frontend) + Render (Backend)**
-4. ⏳ ยังไม่มี Anthropic API Key และ Supabase project — จะแนะนำวิธีสมัครใน Phase 3 (Supabase) และ Phase 12 (Anthropic API Key)
+4. ✅ Supabase project และ Gemini API Key ตั้งค่าเรียบร้อยแล้ว (Phase 3 และ Phase 12 ตามลำดับ — ดูข้อ 9 เรื่องเปลี่ยนจาก Claude เป็น Gemini)
 5. ✅ เพิ่ม **หน้า Admin เล็ก ๆ** สำหรับแก้ไขราคาห้อง (`price_per_night`) และสถานะห้อง (`status`) — ป้องกันด้วยรหัสผ่าน admin ตัวเดียว + JWT token ไม่ทำระบบ role/permission ซับซ้อน (ดูรายละเอียดในข้อ 4.7) เพิ่มเป็น **Phase 18** ใน Roadmap
 6. ✅ เพิ่มรายการต่อไปนี้หลังตรวจสอบเอกสารรอบที่สอง เพื่อให้ระบบดูเป็นระบบจริงและใช้งานได้จริงมากขึ้น:
    - **Race condition protection** ด้วย `SELECT ... FOR UPDATE` ตอนจองห้อง (ข้อ 4.6, Phase 7)
@@ -591,7 +593,7 @@ Backend เรียก Supabase ด้วย Service Role Key ซึ่ง **by
    - **Cancellation policy** จำกัดวันยกเลิกล่วงหน้า (ข้อ 4.9, Phase 9)
    - **LINE ID Token verification จริง** ทุก request สำคัญ (ข้อ 1.2, Phase 10)
    - **LINE Messaging API** แจ้งเตือนจอง/ยกเลิกเข้าแชท LINE (Phase 11)
-   - **Rate limiting + จำกัดรอบ tool-calling** คุมค่าใช้จ่าย Claude API (Phase 14)
+   - **Rate limiting + จำกัดรอบ tool-calling** คุม rate limit ของ Gemini API (Phase 14)
    - **Availability calendar** แบบง่ายในหน้า Booking (Phase 8)
    - **Logging การเรียก tool ของ AI** ลง `ai_messages` เพื่อ debug (Phase 12)
    - **Unit test** สำหรับ date overlap และ booking service (Phase 7)
@@ -605,7 +607,7 @@ Backend เรียก Supabase ด้วย Service Role Key ซึ่ง **by
    - **CORS + Helmet** จำกัด origin เฉพาะ frontend และตั้ง security headers พื้นฐาน (Phase 4)
    - **Environment variable validation แบบ fail-fast** ตอน server start (Phase 4)
    - **LiffGuard** แจ้งเตือนเมื่อเปิดแอปนอก LINE App + จัดการ token หมดอายุ (Phase 10)
-   - **จำกัดความยาวประวัติสนทนา** ที่ส่งให้ Claude เพื่อคุมต้นทุน (Phase 12)
+   - **จำกัดความยาวประวัติสนทนา** ที่ส่งให้ Gemini เพื่อคุมขนาด request (Phase 12)
    - **CI/CD ผ่าน GitHub Actions** และ **Error Monitoring ผ่าน Sentry** (Phase 21, ใหม่)
    - **PDPA Privacy Notice** แจ้งผู้ใช้เรื่องการเก็บข้อมูล LINE profile (ข้อ 4.12, Phase 19)
    - เพิ่ม **Phase 24: สรุปและทบทวน Portfolio** ปิดท้าย Roadmap
@@ -617,6 +619,7 @@ Backend เรียก Supabase ด้วย Service Role Key ซึ่ง **by
    - **หน้า Admin ดู Booking ทั้งหมดแบบ Read-only** `AdminBookingList` + `GET /api/admin/bookings` (ข้อ 4.16, Phase 18)
    - **AI Human Handoff** — guardrail แนะนำเบอร์โทรโรงแรมเมื่อเจอคำขอนอกขอบเขต (ข้อ 4.17, Phase 12)
    - เพิ่ม **Phase 25: Buffer** เผื่อเวลาแก้ปัญหาที่พบตอนทดสอบจริงก่อนนำเสนอ Portfolio
-9. ⚠️ **เปลี่ยน AI provider จาก Claude API (Anthropic) เป็น Google Gemini API** (ระหว่าง Phase 12) — เหตุผล: Anthropic API ไม่มี free tier ต่อเนื่อง (Claude Pro subscription ใช้เรียก API ไม่ได้ เป็นคนละผลิตภัณฑ์กัน) ส่วน Gemini API มี free tier จริงผ่าน Google AI Studio ไม่ต้องผูกบัตรเครดิต เหมาะกับการพัฒนา/ทดสอบ Portfolio มากกว่า
-   - ทุกจุดในเอกสารนี้ (STEP 2 Architecture Diagram, STEP 3 Folder Structure ส่วน `services/claude/`, STEP 5.1 Technology Stack, และการอ้างอิง "Claude"/"Anthropic"/"ANTHROPIC_API_KEY" อื่น ๆ ทั้งหมด) **เป็นข้อมูลเดิมก่อนการเปลี่ยนแปลงนี้** โค้ดจริงใช้ `services/gemini/` และ `GEMINI_API_KEY` แทน — ดูสถานะปัจจุบันที่ [README.md](../README.md)
-   - Tool calling format, system prompt structure, และ guardrail (anti-hallucination, human handoff) ยังคงหลักการเดิมทั้งหมด เปลี่ยนแค่ provider เบื้องหลัง ไม่กระทบ business logic หรือ database schema
+9. ✅ **เปลี่ยน AI provider จาก Claude API (Anthropic) เป็น Google Gemini API** (ระหว่าง Phase 12) — เหตุผล: Anthropic API ไม่มี free tier ต่อเนื่อง (Claude Pro subscription ใช้เรียก API ไม่ได้ เป็นคนละผลิตภัณฑ์กัน) ส่วน Gemini API มี free tier จริงผ่าน Google AI Studio ไม่ต้องผูกบัตรเครดิต เหมาะกับการพัฒนา/ทดสอบ Portfolio มากกว่า
+   - แก้ไขทุกจุดในเอกสารนี้ที่อ้างอิง Claude/Anthropic ให้ตรงกับ Gemini แล้ว (STEP 1-2 Architecture, STEP 3 Folder Structure — `services/gemini/`, STEP 5.1-5.2 Technology Stack และค่าใช้จ่าย, STEP 6 Roadmap, และสรุปการตัดสินใจข้อ 4/6/7 ด้านบน)
+   - โค้ดจริงใช้ `services/gemini/geminiClient.js` (`@google/genai`) และ `GEMINI_API_KEY` — model ที่ใช้คือ `gemini-flash-latest` (เลือก alias แทน version ตายตัว เพราะเจอ Google เลิกใช้ `gemini-2.5-flash`/`gemini-2.0-flash` ระหว่างทดสอบจริง) พร้อม retry logic รองรับ 503 "high demand" ของ free tier
+   - Tool calling format, system prompt structure, และ guardrail (anti-hallucination, human handoff) ยังคงหลักการเดิมทั้งหมด เปลี่ยนแค่ provider เบื้องหลัง ไม่กระทบ business logic หรือ database schema — ยืนยันแล้วด้วยการทดสอบจริงใน Phase 12 (ดู commit `1b5b902`)
