@@ -53,6 +53,25 @@ a {
   height: calc(100vh - 120px);
 }
 
+.ai-assistant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.voice-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .chat-window {
   flex: 1;
   overflow-y: auto;

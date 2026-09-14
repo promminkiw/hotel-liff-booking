@@ -4,6 +4,17 @@ import { fetchMessages, sendChatMessage } from '../../api/aiApi.js'
 import ChatBubble from '../../components/ai/ChatBubble.jsx'
 import MicButton from '../../components/ai/MicButton.jsx'
 import LoginPrompt from '../../components/common/LoginPrompt.jsx'
+import { isSpeechSynthesisSupported, speak, stopSpeaking } from '../../services/voiceService.js'
+
+const VOICE_PREF_KEY = 'hotel_ai_voice_enabled'
+
+function loadVoicePref() {
+  try {
+    return localStorage.getItem(VOICE_PREF_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
 
 export default function AIAssistant() {
   const { profile, idToken, loading: userLoading, login } = useUser()
@@ -12,6 +23,10 @@ export default function AIAssistant() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
+  // Default off: browsers restrict audio autoplay without a user gesture,
+  // and unprompted speech from a chat reply would be surprising anyway -
+  // the user explicitly opts in via the toggle below.
+  const [voiceEnabled, setVoiceEnabled] = useState(loadVoicePref)
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -26,11 +41,27 @@ export default function AIAssistant() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  useEffect(() => {
+    return () => stopSpeaking()
+  }, [])
+
+  function toggleVoice() {
+    const next = !voiceEnabled
+    setVoiceEnabled(next)
+    if (!next) stopSpeaking()
+    try {
+      localStorage.setItem(VOICE_PREF_KEY, String(next))
+    } catch {
+      // localStorage unavailable - preference just won't persist across reloads
+    }
+  }
+
   async function handleSend(e) {
     e.preventDefault()
     const text = input.trim()
     if (!text || sending) return
 
+    stopSpeaking()
     setError(null)
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', content: text }])
@@ -39,6 +70,7 @@ export default function AIAssistant() {
     try {
       const { reply } = await sendChatMessage(idToken, text)
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+      if (voiceEnabled) speak(reply)
     } catch (err) {
       setError(err)
     } finally {
@@ -56,7 +88,19 @@ export default function AIAssistant() {
 
   return (
     <section className="ai-assistant">
-      <h1>AI Assistant</h1>
+      <div className="ai-assistant-header">
+        <h1>AI Assistant</h1>
+        {isSpeechSynthesisSupported() && (
+          <button
+            type="button"
+            className="voice-toggle"
+            onClick={toggleVoice}
+            title={voiceEnabled ? 'ปิดเสียงตอบกลับ' : 'เปิดให้ AI พูดตอบกลับ'}
+          >
+            {voiceEnabled ? '🔊' : '🔇'}
+          </button>
+        )}
+      </div>
 
       <div className="chat-window">
         {loadingHistory && <p>กำลังโหลด...</p>}
