@@ -24,4 +24,8 @@ export const env = {
   lineChannelId: process.env.LINE_CHANNEL_ID,
   lineChannelSecret: process.env.LINE_CHANNEL_SECRET,
   lineMessagingAccessToken: process.env.LINE_MESSAGING_ACCESS_TOKEN,
+  // Not yet in `required` - the AI chat feature is wired up in Phase 12 but
+  // the key hasn't been provided yet, and the rest of the app must keep
+  // working without it until then. Add to `required` once it's set.
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
 }

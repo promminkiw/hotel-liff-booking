@@ -2,6 +2,7 @@ import { createSupabaseClient } from '../config/supabaseClient.js'
 import { todayInBangkok, addDaysToDateString, daysBetween } from '../utils/dateTz.js'
 import { getHotelInfo } from './hotelInfo.service.js'
 import { sendPushMessage } from './lineMessaging.service.js'
+import { findOrCreateUser } from './users.service.js'
 
 function formatBaht(amount) {
   return `${Number(amount).toLocaleString('th-TH')} บาท`
@@ -85,26 +86,6 @@ export function getCancellationError({ status, checkIn, cancellationDaysBefore, 
   return null
 }
 
-async function findOrCreateUser(supabase, lineUserId, displayName) {
-  const { data: existing, error: findError } = await supabase
-    .from('users')
-    .select('id')
-    .eq('line_user_id', lineUserId)
-    .maybeSingle()
-
-  if (findError) throw findError
-  if (existing) return existing.id
-
-  const { data: created, error: createError } = await supabase
-    .from('users')
-    .insert({ line_user_id: lineUserId, display_name: displayName })
-    .select('id')
-    .single()
-
-  if (createError) throw createError
-  return created.id
-}
-
 export async function createBooking({ lineUserId, displayName, roomType, checkIn, checkOut, guests, idempotencyKey }) {
   const hotelInfo = await getHotelInfo()
   const errors = validateBookingInput({ checkIn, checkOut, guests, hotelInfo })
@@ -113,7 +94,7 @@ export async function createBooking({ lineUserId, displayName, roomType, checkIn
   }
 
   const supabase = createSupabaseClient()
-  const userId = await findOrCreateUser(supabase, lineUserId, displayName)
+  const userId = await findOrCreateUser(lineUserId, displayName)
 
   const { data, error } = await supabase.rpc('create_booking_atomic', {
     p_user_id: userId,
