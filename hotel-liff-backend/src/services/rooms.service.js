@@ -1,4 +1,6 @@
 import { createSupabaseClient } from '../config/supabaseClient.js'
+import { daysInMonth, addDaysToDateString } from '../utils/dateTz.js'
+import { datesOverlap } from '../utils/dateOverlap.js'
 
 const ROOM_COLUMNS =
   'id, room_number, room_type, name, description, price_per_night, max_guests, bed_type, amenities, image_url, status'
@@ -71,4 +73,46 @@ export async function checkRoomTypeAvailability({ roomType, checkIn, checkOut, g
     count: availableRooms.length,
     pricePerNight: availableRooms.length > 0 ? Math.min(...availableRooms.map((r) => r.price_per_night)) : null,
   }
+}
+
+// One month of per-day availability for a room_type, used to render the
+// booking calendar. For each day, availableCount = how many active rooms
+// of this type have no overlapping booking that day.
+export async function getAvailabilityCalendar({ roomType, month }) {
+  const supabase = createSupabaseClient()
+  const days = daysInMonth(month)
+  const monthStart = days[0]
+  const monthEnd = addDaysToDateString(days[days.length - 1], 1) // exclusive
+
+  const { data: rooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select('id')
+    .eq('room_type', roomType)
+    .eq('status', 'active')
+
+  if (roomsError) throw roomsError
+  const totalRooms = rooms.length
+
+  if (totalRooms === 0) {
+    return { totalRooms: 0, days: days.map((date) => ({ date, availableCount: 0 })) }
+  }
+
+  const roomIds = rooms.map((r) => r.id)
+  const { data: bookings, error: bookingsError } = await supabase
+    .from('bookings')
+    .select('check_in, check_out')
+    .in('room_id', roomIds)
+    .in('status', ['pending', 'confirmed'])
+    .lt('check_in', monthEnd)
+    .gt('check_out', monthStart)
+
+  if (bookingsError) throw bookingsError
+
+  const calendarDays = days.map((date) => {
+    const nextDay = addDaysToDateString(date, 1)
+    const bookedCount = bookings.filter((b) => datesOverlap(b.check_in, b.check_out, date, nextDay)).length
+    return { date, availableCount: Math.max(totalRooms - bookedCount, 0) }
+  })
+
+  return { totalRooms, days: calendarDays }
 }

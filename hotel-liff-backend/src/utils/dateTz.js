@@ -27,3 +27,15 @@ export function daysBetween(startStr, endStr) {
   const end = Date.UTC(y2, m2 - 1, d2)
   return Math.round((end - start) / 86400000)
 }
+
+// Every calendar date (as 'YYYY-MM-DD') in the given 'YYYY-MM' month.
+export function daysInMonth(month) {
+  const [y, m] = month.split('-').map(Number)
+  const days = []
+  const date = new Date(Date.UTC(y, m - 1, 1))
+  while (date.getUTCMonth() === m - 1) {
+    days.push(date.toISOString().slice(0, 10))
+    date.setUTCDate(date.getUTCDate() + 1)
+  }
+  return days
+}

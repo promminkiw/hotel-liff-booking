@@ -1,6 +1,7 @@
-import { listRooms, getRoomById, checkRoomTypeAvailability } from '../services/rooms.service.js'
+import { listRooms, getRoomById, checkRoomTypeAvailability, getAvailabilityCalendar } from '../services/rooms.service.js'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const MONTH_RE = /^\d{4}-\d{2}$/
 
 export async function getRooms(req, res, next) {
   try {
@@ -37,6 +38,19 @@ export async function postCheckAvailability(req, res, next) {
       return res.status(400).json({ error: 'ข้อมูลไม่ครบถ้วน' })
     }
     const result = await checkRoomTypeAvailability({ roomType, checkIn, checkOut, guests: Number(guests) })
+    res.json(result)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getAvailabilityCalendarHandler(req, res, next) {
+  try {
+    const { room_type: roomType, month } = req.query
+    if (!roomType || !month || !MONTH_RE.test(month)) {
+      return res.status(400).json({ error: 'ต้องระบุ room_type และ month (YYYY-MM)' })
+    }
+    const result = await getAvailabilityCalendar({ roomType, month })
     res.json(result)
   } catch (err) {
     next(err)

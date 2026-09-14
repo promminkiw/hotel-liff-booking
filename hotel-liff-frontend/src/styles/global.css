@@ -211,6 +211,24 @@ a {
   margin: var(--space-3) 0;
 }
 
+.room-type-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  max-width: 320px;
+  margin-top: var(--space-3);
+}
+
+.room-type-field select,
+.room-type-field input {
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font-family);
+}
+
 .booking-form label {
   display: flex;
   flex-direction: column;
@@ -295,4 +313,108 @@ a {
 .status-completed {
   background: #e5e7eb;
   color: #374151;
+}
+
+/* Availability calendar */
+.availability-calendar {
+  max-width: 320px;
+  margin: var(--space-3) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  background: var(--color-surface);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.calendar-header button {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.calendar-header button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  padding: var(--space-1) 0;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  border: none;
+  background: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.calendar-day:not(.calendar-day-disabled):not(.calendar-day-blank):hover {
+  background: var(--color-border);
+}
+
+.calendar-day-blank {
+  cursor: default;
+}
+
+.calendar-day-disabled {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.calendar-day-selected {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-weight: 600;
+}
+
+.calendar-day-in-range {
+  background: #dbeafe;
+}
+
+.calendar-legend {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.legend-available {
+  background: var(--color-primary);
+}
+
+.legend-full {
+  background: var(--color-text-muted);
 }

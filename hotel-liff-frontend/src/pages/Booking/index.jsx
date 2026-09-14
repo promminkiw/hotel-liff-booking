@@ -7,6 +7,7 @@ import { todayInBangkok } from '../../utils/dateTz.js'
 import { generateIdempotencyKey } from '../../utils/idempotency.js'
 import { formatCurrency } from '../../utils/formatCurrency.js'
 import { ROOM_TYPES } from '../../utils/roomTypes.js'
+import AvailabilityCalendar from '../../components/booking/AvailabilityCalendar.jsx'
 
 export default function Booking() {
   const [searchParams] = useSearchParams()
@@ -55,6 +56,12 @@ export default function Booking() {
     setAvailability(null)
     setCheckError(null)
     setConfirmedBooking(null)
+  }
+
+  function handleSelectRange(nextCheckIn, nextCheckOut) {
+    setCheckIn(nextCheckIn)
+    setCheckOut(nextCheckOut)
+    resetAvailability()
   }
 
   async function handleCheckAvailability(e) {
@@ -119,30 +126,39 @@ export default function Booking() {
     <section>
       <h1>จองห้องพัก</h1>
 
-      <form className="booking-form" onSubmit={handleCheckAvailability}>
-        <label>
-          ประเภทห้อง
-          {lockedRoom ? (
-            <input type="text" value={`${lockedRoom.name} (${lockedRoom.room_type})`} disabled />
-          ) : (
-            <select
-              value={roomType}
-              onChange={(e) => {
-                setRoomType(e.target.value)
-                resetAvailability()
-              }}
-              required
-            >
-              <option value="">เลือกประเภทห้อง</option>
-              {ROOM_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          )}
-        </label>
+      <label className="room-type-field">
+        ประเภทห้อง
+        {lockedRoom ? (
+          <input type="text" value={`${lockedRoom.name} (${lockedRoom.room_type})`} disabled />
+        ) : (
+          <select
+            value={roomType}
+            onChange={(e) => {
+              setRoomType(e.target.value)
+              setCheckIn('')
+              setCheckOut('')
+              resetAvailability()
+            }}
+            required
+          >
+            <option value="">เลือกประเภทห้อง</option>
+            {ROOM_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        )}
+      </label>
 
+      <AvailabilityCalendar
+        roomType={roomType}
+        checkIn={checkIn}
+        checkOut={checkOut}
+        onSelectRange={handleSelectRange}
+      />
+
+      <form className="booking-form" onSubmit={handleCheckAvailability}>
         <label>
           วันเช็คอิน
           <input

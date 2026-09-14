@@ -19,3 +19,8 @@ export function createBooking({ lineUserId, displayName, roomType, checkIn, chec
 export function fetchMyBookings(lineUserId) {
   return httpClient.get(`/api/bookings?lineUserId=${encodeURIComponent(lineUserId)}`)
 }
+
+export function fetchAvailabilityCalendar({ roomType, month }) {
+  const params = new URLSearchParams({ room_type: roomType, month })
+  return httpClient.get(`/api/rooms/availability-calendar?${params.toString()}`)
+}
