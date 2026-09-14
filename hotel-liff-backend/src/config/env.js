@@ -6,6 +6,7 @@ const required = [
   'ALLOWED_ORIGIN',
   'LINE_CHANNEL_ID',
   'LINE_CHANNEL_SECRET',
+  'LINE_MESSAGING_ACCESS_TOKEN',
 ]
 
 const missing = required.filter((key) => !process.env[key])
@@ -22,4 +23,5 @@ export const env = {
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   lineChannelId: process.env.LINE_CHANNEL_ID,
   lineChannelSecret: process.env.LINE_CHANNEL_SECRET,
+  lineMessagingAccessToken: process.env.LINE_MESSAGING_ACCESS_TOKEN,
 }

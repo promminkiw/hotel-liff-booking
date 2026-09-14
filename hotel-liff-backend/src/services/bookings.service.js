@@ -1,6 +1,11 @@
 import { createSupabaseClient } from '../config/supabaseClient.js'
 import { todayInBangkok, addDaysToDateString, daysBetween } from '../utils/dateTz.js'
 import { getHotelInfo } from './hotelInfo.service.js'
+import { sendPushMessage } from './lineMessaging.service.js'
+
+function formatBaht(amount) {
+  return `${Number(amount).toLocaleString('th-TH')} บาท`
+}
 
 export class BookingValidationError extends Error {
   constructor(message) {
@@ -126,6 +131,18 @@ export async function createBooking({ lineUserId, displayName, roomType, checkIn
     throw error
   }
 
+  await sendPushMessage(
+    lineUserId,
+    [
+      'จองห้องพักสำเร็จ ✅',
+      `ประเภทห้อง: ${roomType}`,
+      `เช็คอิน: ${data.check_in}`,
+      `เช็คเอาท์: ${data.check_out}`,
+      `รหัสการจอง: ${data.booking_code}`,
+      `ยอดรวม: ${formatBaht(data.total_price)}`,
+    ].join('\n'),
+  )
+
   return data
 }
 
@@ -192,5 +209,15 @@ export async function cancelBooking({ bookingId, lineUserId }) {
     .single()
 
   if (updateError) throw updateError
+
+  await sendPushMessage(
+    lineUserId,
+    [
+      'ยกเลิกการจองแล้ว',
+      `ห้อง: ${updated.rooms?.name ?? updated.rooms?.room_type ?? ''}`,
+      `รหัสการจอง: ${updated.booking_code}`,
+    ].join('\n'),
+  )
+
   return updated
 }
