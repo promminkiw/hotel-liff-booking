@@ -7,6 +7,7 @@ import healthRoutes from './routes/health.routes.js'
 import roomsRoutes from './routes/rooms.routes.js'
 import bookingsRoutes from './routes/bookings.routes.js'
 import aiRoutes from './routes/ai.routes.js'
+import adminRoutes from './routes/admin.routes.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
 export function createApp() {
@@ -21,6 +22,7 @@ export function createApp() {
   app.use('/api/rooms', roomsRoutes)
   app.use('/api/bookings', bookingsRoutes)
   app.use('/api/ai', aiRoutes)
+  app.use('/api/admin', adminRoutes)
 
   app.use((req, res) => {
     res.status(404).json({ error: 'Not found' })

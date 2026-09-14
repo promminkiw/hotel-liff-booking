@@ -26,6 +26,35 @@ export async function listRooms({ roomType, guests } = {}) {
   return data
 }
 
+// Admin-only: every room regardless of status (the guest-facing listRooms
+// always filters to active, since a guest should never see a room under
+// maintenance or retired).
+export async function listAllRoomsForAdmin() {
+  const supabase = createSupabaseClient()
+  const { data, error } = await supabase
+    .from('rooms')
+    .select(ROOM_COLUMNS)
+    .order('room_type', { ascending: true })
+    .order('room_number', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+export async function createRoom(room) {
+  const supabase = createSupabaseClient()
+  const { data, error } = await supabase.from('rooms').insert(room).select(ROOM_COLUMNS).single()
+  if (error) throw error
+  return data
+}
+
+export async function updateRoom(id, updates) {
+  const supabase = createSupabaseClient()
+  const { data, error } = await supabase.from('rooms').update(updates).eq('id', id).select(ROOM_COLUMNS).maybeSingle()
+  if (error) throw error
+  return data
+}
+
 export async function getRoomById(id) {
   const supabase = createSupabaseClient()
   const { data, error } = await supabase.from('rooms').select(ROOM_COLUMNS).eq('id', id).maybeSingle()

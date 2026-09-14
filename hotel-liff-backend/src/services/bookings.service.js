@@ -149,6 +149,21 @@ export async function listBookingsByUser(lineUserId) {
   return data.map((booking) => ({ ...booking, displayStatus: getVirtualStatus(booking) }))
 }
 
+// Admin-only: every booking from every guest, read-only (4.16 - editing/
+// cancelling from the admin side is explicitly out of scope for this
+// version; guests cancel their own bookings through the app).
+export async function listAllBookingsForAdmin() {
+  const supabase = createSupabaseClient()
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*, rooms(name, room_type), users(display_name, line_user_id)')
+    .order('check_in', { ascending: false })
+
+  if (error) throw error
+  return data.map((booking) => ({ ...booking, displayStatus: getVirtualStatus(booking) }))
+}
+
 export async function cancelBooking({ bookingId, lineUserId }) {
   const supabase = createSupabaseClient()
 

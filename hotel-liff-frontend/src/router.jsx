@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
-import Layout from './components/layout/Layout.jsx'
+import GuestShell from './components/layout/GuestShell.jsx'
+import AdminShell from './components/layout/AdminShell.jsx'
+import RequireAdminAuth from './components/layout/RequireAdminAuth.jsx'
 import Home from './pages/Home/index.jsx'
 import Rooms from './pages/Rooms/index.jsx'
 import RoomDetail from './pages/RoomDetail/index.jsx'
@@ -14,7 +16,7 @@ import AdminBookingList from './pages/Admin/AdminBookingList.jsx'
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route element={<Layout />}>
+      <Route element={<GuestShell />}>
         <Route path="/" element={<Home />} />
         <Route path="/rooms" element={<Rooms />} />
         <Route path="/rooms/:roomId" element={<RoomDetail />} />
@@ -23,12 +25,16 @@ export default function AppRoutes() {
         <Route path="/ai-assistant" element={<AIAssistant />} />
       </Route>
 
-      {/* Admin routes are not wrapped in the guest Layout - they're accessed
-          from a plain browser, not from inside LINE. */}
-      <Route path="/admin" element={<AdminLogin />} />
-      <Route path="/admin/rooms" element={<AdminRoomList />} />
-      <Route path="/admin/rooms/new" element={<AdminRoomCreate />} />
-      <Route path="/admin/bookings" element={<AdminBookingList />} />
+      {/* Admin has its own JWT auth, entirely separate from LINE/LIFF -
+          accessed from a plain browser, never wrapped in GuestShell. */}
+      <Route element={<AdminShell />}>
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route element={<RequireAdminAuth />}>
+          <Route path="/admin/rooms" element={<AdminRoomList />} />
+          <Route path="/admin/rooms/new" element={<AdminRoomCreate />} />
+          <Route path="/admin/bookings" element={<AdminBookingList />} />
+        </Route>
+      </Route>
     </Routes>
   )
 }

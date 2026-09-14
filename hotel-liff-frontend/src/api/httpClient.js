@@ -2,8 +2,8 @@ import { env } from '../config/env.js'
 
 async function request(path, options = {}) {
   const res = await fetch(`${env.apiBaseUrl}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
+    headers: { 'Content-Type': 'application/json', ...options.headers },
   })
 
   if (!res.ok) {

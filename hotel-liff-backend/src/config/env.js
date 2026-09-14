@@ -8,6 +8,8 @@ const required = [
   'LINE_CHANNEL_SECRET',
   'LINE_MESSAGING_ACCESS_TOKEN',
   'GEMINI_API_KEY',
+  'ADMIN_PASSWORD',
+  'ADMIN_SECRET',
 ]
 
 const missing = required.filter((key) => !process.env[key])
@@ -26,4 +28,6 @@ export const env = {
   lineChannelSecret: process.env.LINE_CHANNEL_SECRET,
   lineMessagingAccessToken: process.env.LINE_MESSAGING_ACCESS_TOKEN,
   geminiApiKey: process.env.GEMINI_API_KEY,
+  adminPassword: process.env.ADMIN_PASSWORD,
+  adminSecret: process.env.ADMIN_SECRET,
 }
