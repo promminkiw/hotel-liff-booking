@@ -5,6 +5,7 @@ import { listAllRoomsForAdmin, createRoom, updateRoom } from '../services/rooms.
 import { listAllBookingsForAdmin } from '../services/bookings.service.js'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const ROOM_STATUSES = new Set(['active', 'maintenance', 'inactive'])
 
 function passwordMatches(candidate) {
   const a = Buffer.from(candidate)
@@ -44,13 +45,22 @@ export async function postRoom(req, res, next) {
       return res.status(400).json({ error: 'ข้อมูลไม่ครบถ้วน (ต้องมีเลขห้อง, ประเภท, ชื่อ, ราคา, จำนวนผู้เข้าพักสูงสุด)' })
     }
 
+    const price = Number(pricePerNight)
+    const guests = Number(maxGuests)
+    if (!Number.isFinite(price) || price <= 0) {
+      return res.status(400).json({ error: 'ราคาต่อคืนต้องเป็นตัวเลขมากกว่า 0' })
+    }
+    if (!Number.isInteger(guests) || guests <= 0) {
+      return res.status(400).json({ error: 'จำนวนผู้เข้าพักสูงสุดต้องเป็นจำนวนเต็มมากกว่า 0' })
+    }
+
     const room = await createRoom({
       room_number: roomNumber,
       room_type: roomType,
       name,
       description: description ?? null,
-      price_per_night: Number(pricePerNight),
-      max_guests: Number(maxGuests),
+      price_per_night: price,
+      max_guests: guests,
       bed_type: bedType ?? null,
       amenities: amenities ?? [],
       image_url: imageUrl ?? null,
@@ -73,8 +83,21 @@ export async function patchRoom(req, res, next) {
     }
 
     const updates = {}
-    if (req.body.pricePerNight !== undefined) updates.price_per_night = Number(req.body.pricePerNight)
-    if (req.body.status !== undefined) updates.status = req.body.status
+
+    if (req.body.pricePerNight !== undefined) {
+      const price = Number(req.body.pricePerNight)
+      if (!Number.isFinite(price) || price <= 0) {
+        return res.status(400).json({ error: 'ราคาต่อคืนต้องเป็นตัวเลขมากกว่า 0' })
+      }
+      updates.price_per_night = price
+    }
+
+    if (req.body.status !== undefined) {
+      if (!ROOM_STATUSES.has(req.body.status)) {
+        return res.status(400).json({ error: `สถานะต้องเป็นหนึ่งใน: ${[...ROOM_STATUSES].join(', ')}` })
+      }
+      updates.status = req.body.status
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'ไม่มีข้อมูลที่จะแก้ไข' })

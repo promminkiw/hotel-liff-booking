@@ -14,6 +14,14 @@ import { errorHandler } from './middleware/errorHandler.js'
 export function createApp() {
   const app = express()
 
+  // Render (Phase 22) puts one reverse proxy in front of this server. Without
+  // this, req.ip resolves to the proxy's own address for every request -
+  // express-rate-limit's IP-based limiters (admin login) would then either
+  // share one bucket across all users or reject outright. `1` trusts exactly
+  // the first hop's X-Forwarded-For entry, which matches a single-proxy
+  // deployment; it's a no-op locally since there's no proxy in front.
+  app.set('trust proxy', 1)
+
   app.use(helmet())
   app.use(cors(corsOptions))
   app.use(express.json())
