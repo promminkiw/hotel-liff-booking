@@ -202,3 +202,21 @@ export async function cancelBooking({ bookingId, lineUserId }) {
 
   return updated
 }
+
+// Looks a booking up by its human-facing code (what a user types in chat)
+// and delegates to cancelBooking - same ownership check and cancellation
+// policy, no separate code path to keep in sync.
+export async function cancelBookingByCode({ bookingCode, lineUserId }) {
+  const supabase = createSupabaseClient()
+
+  const { data: booking, error } = await supabase
+    .from('bookings')
+    .select('id')
+    .eq('booking_code', bookingCode)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!booking) throw new BookingNotFoundError()
+
+  return cancelBooking({ bookingId: booking.id, lineUserId })
+}

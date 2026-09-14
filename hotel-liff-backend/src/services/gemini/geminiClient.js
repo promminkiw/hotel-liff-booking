@@ -18,9 +18,27 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// The free tier occasionally returns 503 "high demand" or 429 rate-limit
-// errors that clear up within a second or two - worth a couple of quick
-// retries before surfacing an error to the user.
+// 429 on the free tier is a per-minute request quota (observed: 5
+// requests/minute/model), not a momentary blip like 503 - a short fixed
+// backoff isn't enough, so honor the server's suggested retryDelay when
+// present and fall back to a multi-second wait otherwise.
+function getRetryDelayMs(err, attempt) {
+  if (err.status === 429) {
+    try {
+      const parsed = JSON.parse(err.message)
+      const retryInfo = parsed?.error?.details?.find((d) => d['@type']?.includes('RetryInfo'))
+      const seconds = parseFloat(retryInfo?.retryDelay ?? '')
+      if (!Number.isNaN(seconds) && seconds > 0) {
+        return Math.min(seconds * 1000 + 500, 10000)
+      }
+    } catch {
+      // fall through to the default below
+    }
+    return 4000 * (attempt + 1)
+  }
+  return 500 * (attempt + 1)
+}
+
 export async function generateContentWithRetry(params, maxRetries = 2) {
   const gemini = getGeminiClient()
   let lastError
@@ -33,7 +51,7 @@ export async function generateContentWithRetry(params, maxRetries = 2) {
       if (!RETRYABLE_STATUS.has(err.status) || attempt === maxRetries) {
         throw err
       }
-      await sleep(500 * (attempt + 1))
+      await sleep(getRetryDelayMs(err, attempt))
     }
   }
 
