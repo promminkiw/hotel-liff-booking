@@ -9,6 +9,13 @@ export class BookingValidationError extends Error {
   }
 }
 
+export class BookingNotFoundError extends Error {
+  constructor(message = 'ไม่พบการจองนี้') {
+    super(message)
+    this.status = 404
+  }
+}
+
 // Pure validation logic, kept separate from any DB calls so it can be unit
 // tested directly. hotelInfo carries cancellation_days_before,
 // max_advance_booking_days, max_length_of_stay_nights.
@@ -42,6 +49,35 @@ export function validateBookingInput({ checkIn, checkOut, guests, hotelInfo, tod
   }
 
   return errors
+}
+
+// Never mutates booking.status in the DB - just what to show. 4.14: instead
+// of a cron job flipping confirmed -> completed after checkout, the
+// "completed" state is computed here, every time bookings are displayed.
+export function getVirtualStatus(booking, today = todayInBangkok()) {
+  if (booking.status === 'confirmed' && booking.check_out < today) {
+    return 'completed'
+  }
+  return booking.status
+}
+
+// Pure: given the booking's virtual status and the hotel's cancellation
+// policy, returns a user-facing error message if cancellation should be
+// refused, or null if it's allowed.
+export function getCancellationError({ status, checkIn, cancellationDaysBefore, today = todayInBangkok() }) {
+  if (status === 'cancelled') {
+    return 'การจองนี้ถูกยกเลิกไปแล้ว'
+  }
+  if (status !== 'pending' && status !== 'confirmed') {
+    return 'ไม่สามารถยกเลิกการจองนี้ได้ เนื่องจากเข้าพักเสร็จสิ้นแล้ว'
+  }
+
+  const minCheckIn = addDaysToDateString(today, cancellationDaysBefore)
+  if (checkIn < minCheckIn) {
+    return 'ไม่สามารถยกเลิกได้แล้ว เนื่องจากใกล้วันเข้าพัก กรุณาติดต่อโรงแรมโดยตรง'
+  }
+
+  return null
 }
 
 async function findOrCreateUser(supabase, lineUserId, displayName) {
@@ -112,5 +148,49 @@ export async function listBookingsByUser(lineUserId) {
     .order('check_in', { ascending: false })
 
   if (error) throw error
-  return data
+  return data.map((booking) => ({ ...booking, displayStatus: getVirtualStatus(booking) }))
+}
+
+export async function cancelBooking({ bookingId, lineUserId }) {
+  const supabase = createSupabaseClient()
+
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('line_user_id', lineUserId)
+    .maybeSingle()
+
+  if (userError) throw userError
+  if (!user) throw new BookingNotFoundError()
+
+  const { data: booking, error: bookingError } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('id', bookingId)
+    .maybeSingle()
+
+  if (bookingError) throw bookingError
+  if (!booking || booking.user_id !== user.id) {
+    throw new BookingNotFoundError()
+  }
+
+  const hotelInfo = await getHotelInfo()
+  const cancelError = getCancellationError({
+    status: getVirtualStatus(booking),
+    checkIn: booking.check_in,
+    cancellationDaysBefore: hotelInfo.cancellation_days_before,
+  })
+  if (cancelError) {
+    throw new BookingValidationError(cancelError)
+  }
+
+  const { data: updated, error: updateError } = await supabase
+    .from('bookings')
+    .update({ status: 'cancelled' })
+    .eq('id', bookingId)
+    .select('*, rooms(name, room_type, image_url)')
+    .single()
+
+  if (updateError) throw updateError
+  return updated
 }

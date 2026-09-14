@@ -75,6 +75,39 @@ a {
   cursor: pointer;
 }
 
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-link-danger {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-danger);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-link-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancel-confirm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: 13px;
+}
+
 /* Room filter */
 .room-filter {
   display: flex;

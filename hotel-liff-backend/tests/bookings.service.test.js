@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateBookingInput } from '../src/services/bookings.service.js'
+import { validateBookingInput, getVirtualStatus, getCancellationError } from '../src/services/bookings.service.js'
 
 const hotelInfo = {
   max_advance_booking_days: 365,
@@ -84,5 +84,57 @@ describe('validateBookingInput', () => {
       today,
     })
     expect(errors).toEqual([])
+  })
+})
+
+describe('getVirtualStatus', () => {
+  it('keeps confirmed as-is when checkout is still in the future', () => {
+    const status = getVirtualStatus({ status: 'confirmed', check_out: '2026-06-20' }, today)
+    expect(status).toBe('confirmed')
+  })
+
+  it('keeps confirmed as-is when checkout is today (guest may still be checking out)', () => {
+    const status = getVirtualStatus({ status: 'confirmed', check_out: today }, today)
+    expect(status).toBe('confirmed')
+  })
+
+  it('shows completed once checkout has passed', () => {
+    const status = getVirtualStatus({ status: 'confirmed', check_out: '2026-06-01' }, today)
+    expect(status).toBe('completed')
+  })
+
+  it('never overrides cancelled, even if checkout has passed', () => {
+    const status = getVirtualStatus({ status: 'cancelled', check_out: '2026-06-01' }, today)
+    expect(status).toBe('cancelled')
+  })
+})
+
+describe('getCancellationError', () => {
+  const cancellationDaysBefore = 2
+
+  it('allows cancellation when check-in is beyond the cutoff', () => {
+    const error = getCancellationError({ status: 'confirmed', checkIn: '2026-06-20', cancellationDaysBefore, today })
+    expect(error).toBeNull()
+  })
+
+  it('allows cancellation exactly at the cutoff boundary', () => {
+    // today=2026-06-15, cancellationDaysBefore=2 -> earliest cancellable check-in is 2026-06-17
+    const error = getCancellationError({ status: 'confirmed', checkIn: '2026-06-17', cancellationDaysBefore, today })
+    expect(error).toBeNull()
+  })
+
+  it('refuses cancellation when check-in is inside the cutoff window', () => {
+    const error = getCancellationError({ status: 'confirmed', checkIn: '2026-06-16', cancellationDaysBefore, today })
+    expect(error).toMatch(/ใกล้วันเข้าพัก/)
+  })
+
+  it('refuses cancellation for an already-cancelled booking', () => {
+    const error = getCancellationError({ status: 'cancelled', checkIn: '2026-06-20', cancellationDaysBefore, today })
+    expect(error).toMatch(/ยกเลิกไปแล้ว/)
+  })
+
+  it('refuses cancellation for a completed stay', () => {
+    const error = getCancellationError({ status: 'completed', checkIn: '2026-06-01', cancellationDaysBefore, today })
+    expect(error).toMatch(/เข้าพักเสร็จสิ้นแล้ว/)
   })
 })
