@@ -26,6 +26,22 @@ jobs:
           cache-dependency-path: hotel-liff-backend/package-lock.json
       - run: npm ci
       - run: npm test
+        env:
+          # Dummy values so config/env.js's fail-fast check passes at import
+          # time - the unit tests themselves are pure functions
+          # (validateBookingInput, getVirtualStatus, getCancellationError,
+          # datesOverlap) that never touch Supabase/LINE/Gemini for real,
+          # but env.js's required-vars check runs as an import side effect
+          # before any test code executes, so it needs *something* set.
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: dummy
+          ALLOWED_ORIGIN: https://example.com
+          LINE_CHANNEL_ID: dummy
+          LINE_CHANNEL_SECRET: dummy
+          LINE_MESSAGING_ACCESS_TOKEN: dummy
+          GEMINI_API_KEY: dummy
+          ADMIN_PASSWORD: dummy
+          ADMIN_SECRET: dummy
 
   frontend-build:
     runs-on: ubuntu-latest
